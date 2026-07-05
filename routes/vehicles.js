@@ -19,9 +19,9 @@ router.get('/', requireAuth, async (req, res) => {
 router.get('/available', async (req, res) => {
   try {
     const { brand, model } = req.query;
-    let query = { 
+    let query = {
       currentBranch: process.env.BRANCH_CODE,
-      status: 'Available' 
+      status: 'Available'
     };
 
     if (brand) query.brand = new RegExp(brand, 'i');

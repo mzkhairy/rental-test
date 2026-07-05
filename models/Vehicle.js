@@ -12,8 +12,8 @@ const vehicleSchema = new mongoose.Schema({
   dailyRate: { type: Number, required: true },
   homeBranch: { type: String, required: true },
   currentBranch: { type: String, required: true },
-  status: { 
-    type: String, 
+  status: {
+    type: String,
     enum: ['Available', 'Reserved', 'Rented', 'Transfer', 'Maintenance'],
     default: 'Available'
   },

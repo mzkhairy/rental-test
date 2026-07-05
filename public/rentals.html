@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
   <meta charset="UTF-8">
   <title>Penyewaan - RentSync</title>
@@ -10,8 +11,14 @@
     .detail-item { margin-bottom: 0.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color); }
     .detail-label { font-weight: 600; color: var(--text-muted); font-size: 0.85rem; display: block; }
     .detail-value { color: var(--text-main); font-size: 0.95rem; word-break: break-all; }
+    .tabs { display: flex; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); }
+    .tab { padding: 0.75rem 1.5rem; cursor: pointer; color: var(--text-muted); border-bottom: 2px solid transparent; font-weight: 500;}
+    .tab.active { color: var(--primary-color); border-bottom-color: var(--primary-color); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
   </style>
 </head>
+
 <body>
   <aside class="sidebar">
     <div class="sidebar-logo">RentSync</div>
@@ -21,7 +28,6 @@
       <a href="/vehicles.html" class="nav-link">Kendaraan</a>
       <a href="/customers.html" class="nav-link">Pelanggan</a>
       <a href="/employees.html" class="nav-link">Karyawan</a>
-      <a href="/transfers.html" class="nav-link">Transfer (P2P)</a>
     </nav>
   </aside>
 
@@ -30,10 +36,14 @@
       <div class="topbar-left" id="topbar-branch">Loading...</div>
       <div class="topbar-right">
         <div class="notification-bell" id="notif-bell">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
           <span class="badge" id="notif-badge">0</span>
           <div class="notif-dropdown" id="notif-dropdown">
-            <div class="notif-header">Notifikasi Transfer Masuk</div>
+            <div class="notif-header">Notifikasi Rental Lintas Cabang</div>
             <div class="notif-body" id="notif-body"></div>
           </div>
         </div>
@@ -46,45 +56,101 @@
 
     <div class="page-content">
       <div class="page-header">
-        <h1 class="page-title">Transaksi Penyewaan</h1>
-        <button class="btn-primary" style="width: auto;" onclick="openRentalModal()">Buat Transaksi Baru</button>
-      </div>
-
-      <div class="search-filter-box" style="display: flex; justify-content: space-between; flex-wrap: wrap;">
-        <div style="display: flex; gap: 12px; flex: 1; max-width: 500px;">
-          <input type="text" id="searchInput" class="form-control" placeholder="Cari kode rental atau nama pelanggan..." style="width: 100%; max-width: 400px; height: 44px;">
-          <button class="btn-primary" style="width: 60px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" onclick="renderTable()">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-          </button>
-        </div>
-        <div style="display: flex; gap: 12px;">
-          <select id="filterStatus" class="form-control" style="height: 44px;" onchange="renderTable()">
-            <option value="">Semua Status</option>
-            <option value="Pending Payment">Pending Payment</option>
-            <option value="Active">Active</option>
-            <option value="Completed">Completed</option>
-            <option value="Cancelled">Cancelled</option>
-          </select>
+        <h1 class="page-title">Penyewaan & Logistik Kendaraan</h1>
+        <div id="header-actions">
+          <button class="btn-primary" style="width: auto;" onclick="openRentalModal('local')">Buat Transaksi Lokal</button>
         </div>
       </div>
 
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>Kode Rental</th>
-              <th>Customer</th>
-              <th>Kendaraan</th>
-              <th>Tanggal Pinjam</th>
-              <th>Lama (Hari)</th>
-              <th>Status</th>
-              <th>Aksi</th>
-            </tr>
-          </thead>
-          <tbody id="table-body">
-             <tr><td colspan="7" style="text-align:center">Memuat...</td></tr>
-          </tbody>
-        </table>
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab('local', this)">Data Penyewaan</div>
+        <div class="tab" onclick="switchTab('cross', this)">Penyewaan Lintas Cabang</div>
+        <div class="tab" onclick="switchTab('logistics', this)">Incoming Requests <span id="logistics-badge" class="badge" style="position:relative;top:-2px;left:5px;display:none;">0</span></div>
+      </div>
+
+      <div id="tab-rentals" class="tab-content active">
+        <!-- Row 1: Penyewaan Berlangsung -->
+        <h3 style="margin-bottom: 1rem;">Penyewaan Berlangsung</h3>
+        <div class="search-filter-box">
+          <div style="display: flex; gap: 12px; flex: 1;">
+            <input type="text" id="searchOngoing" class="form-control" placeholder="Cari kode rental atau nama pelanggan..." style="max-width: 400px; height: 44px;" oninput="renderTable()">
+          </div>
+        </div>
+        <div class="table-container" style="margin-bottom: 2rem;">
+          <table>
+            <thead><tr><th>Kode Rental</th><th>Customer</th><th>Kendaraan</th><th>Tanggal Pinjam</th><th>Lama (Hari)</th><th>Status</th><th>Aksi</th></tr></thead>
+            <tbody id="table-body-ongoing">
+               <tr><td colspan="7" style="text-align:center">Memuat...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Row 2: Histori Penyewaan -->
+        <h3 style="margin-bottom: 1rem; margin-top: 3rem;">Histori Penyewaan</h3>
+        <div class="search-filter-box" style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+          <div style="display: flex; gap: 12px; flex: 1; min-width: 300px; flex-wrap: wrap;">
+            <input type="text" id="searchHistory" class="form-control" placeholder="Cari histori..." style="width: 100%; max-width: 300px; height: 44px;" oninput="renderTable()">
+            <input type="date" id="filterStartDate" class="form-control" style="height: 44px; width: auto;" title="Tanggal Mulai" onchange="renderTable()">
+            <span style="display:flex; align-items:center; color: var(--text-muted);">s/d</span>
+            <input type="date" id="filterEndDate" class="form-control" style="height: 44px; width: auto;" title="Tanggal Selesai" onchange="renderTable()">
+          </div>
+          <div style="display: flex; gap: 12px;">
+            <select id="filterStatus" class="form-control" style="height: 44px;" onchange="renderTable()">
+              <option value="">Semua Status</option>
+              <option value="Completed">Completed</option>
+              <option value="Cancelled">Cancelled</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead><tr><th>Kode Rental</th><th>Customer</th><th>Kendaraan</th><th>Jenis</th><th>Asal Cabang</th><th>Tanggal Pinjam</th><th>Lama (Hari)</th><th>Status</th><th>Aksi</th></tr></thead>
+            <tbody id="table-body-history">
+               <tr><td colspan="9" style="text-align:center">Memuat...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="tab-cross" class="tab-content">
+        <h3 style="margin-bottom: 1rem;">Cari & Sewa Kendaraan Cabang Lain</h3>
+        <!-- Grid 1: Form -->
+        <div style="display: flex; gap: 1rem; margin-bottom: 2rem; background: var(--bg-card); padding: 1.5rem; border-radius: 8px; border: 1px solid var(--border-color);">
+          <div style="flex:1;">
+            <label style="display:block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.9rem;">Customer <span style="color:red">*</span></label>
+            <select id="crossCustomer" class="form-control" required onchange="fetchCrossBranchVehicles()"><option value="">Memuat...</option></select>
+          </div>
+          <div style="flex:1;">
+            <label style="display:block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.9rem;">Tanggal Mulai <span style="color:red">*</span></label>
+            <input type="date" id="crossStartDate" class="form-control" required onchange="fetchCrossBranchVehicles()">
+          </div>
+          <div style="flex:1;">
+            <label style="display:block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.9rem;">Total Hari <span style="color:red">*</span></label>
+            <input type="number" id="crossTotalDays" class="form-control" required min="1" value="1" onchange="fetchCrossBranchVehicles()">
+          </div>
+        </div>
+
+        <!-- Grid 2: Hasil Pencarian -->
+        <div class="search-filter-box" style="margin-bottom: 1rem;">
+          <input type="text" id="searchCross" class="form-control" placeholder="Cari nama atau merk kendaraan di semua cabang..." style="max-width: 400px; height: 44px;" oninput="renderCrossBranchTables()">
+        </div>
+        <div id="crossBranchResults">
+          <!-- Tables per branch will be injected here -->
+          <p style="color: var(--text-muted); padding: 2rem; text-align: center; border: 1px dashed var(--border-color); border-radius: 8px;">Pilih Customer, Tanggal, dan Total Hari untuk melihat kendaraan dari cabang lain.</p>
+        </div>
+      </div>
+
+      <div id="tab-logistics" class="tab-content">
+        <h3>Request Masuk (Dari Cabang Lain)</h3>
+        <p style="color:var(--text-muted); margin-bottom: 1rem; font-size: 0.9rem;">Cabang lain memiliki transaksi sewa dan membutuhkan mobil dari cabang kita.</p>
+        <div class="table-container" style="margin-bottom: 2rem;">
+          <table>
+            <thead><tr><th>Kode Transfer</th><th>Peminta</th><th>Kendaraan</th><th>Status</th><th>Aksi</th></tr></thead>
+            <tbody id="incoming-results">
+              <tr><td colspan="5" style="text-align:center">Memuat...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </main>
@@ -98,16 +164,22 @@
       </div>
       <form id="rentalForm">
         <div class="form-group">
-          <label>Pilih Kendaraan</label>
-          <select id="vehicleId" class="form-control" required></select>
-        </div>
-        <div class="form-group">
-          <label>Pilih Customer</label>
+          <label for="customerId">Pilih Customer</label>
           <select id="customerId" class="form-control" required></select>
         </div>
         <div class="form-group">
-          <label>Total Hari</label>
-          <input type="number" id="totalDays" class="form-control" required min="1" value="1">
+          <label for="startDate">Tanggal Mulai</label>
+          <input type="date" id="startDate" class="form-control" required onchange="fetchAvailableVehicles()">
+        </div>
+        <div class="form-group">
+          <label for="totalDays">Total Hari</label>
+          <input type="number" id="totalDays" class="form-control" required min="1" value="1" onchange="fetchAvailableVehicles()">
+        </div>
+        <div class="form-group">
+          <label for="vehicleId">Pilih Kendaraan</label>
+          <select id="vehicleId" class="form-control" required disabled>
+            <option value="">Pilih Tanggal Mulai dan Total Hari terlebih dahulu...</option>
+          </select>
         </div>
         <button type="submit" class="btn-primary">Simpan Transaksi</button>
       </form>
@@ -129,63 +201,145 @@
   <script src="/js/notifications.js"></script>
   <script>
     let currentData = [];
+    let incomingTransfers = [];
     let vehicles = [];
     let customers = [];
+    let allCrossVehicles = [];
+    let currentUser = null;
+    let ports = { 'JKT': 4001, 'BGR': 4002, 'DPK': 4003, 'TGR': 4004, 'BKS': 4005 };
     
     document.addEventListener('DOMContentLoaded', async () => {
-      const user = await checkAuth();
-      if (!user) return;
+      currentUser = await checkAuth();
+      if (!currentUser) return;
       initTopbar();
+
+      customers = await apiFetch('/api/customers');
+      const cSelect = document.getElementById('crossCustomer');
+      cSelect.innerHTML = '<option value="">Pilih Customer...</option>';
+      customers.forEach(c => {
+        cSelect.innerHTML += `<option value="${c._id}">${c.fullName}</option>`;
+      });
+      
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('crossStartDate').min = today;
+      document.getElementById('startDate').min = today;
+      
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('highlight') === 'ongoing') {
+        switchTab('logistics');
+      }
+
       loadData();
+      loadIncomingTransfers();
     });
+
+    function switchTab(tabId, el) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      
+      if (el) {
+        el.classList.add('active');
+      } else {
+        const tabs = document.querySelectorAll('.tab');
+        if(tabId === 'local') tabs[0].classList.add('active');
+        if(tabId === 'cross') tabs[1].classList.add('active');
+        if(tabId === 'logistics') tabs[2].classList.add('active');
+      }
+      
+      const headerActions = document.getElementById('header-actions');
+
+      if (tabId === 'local') {
+        document.getElementById('tab-rentals').classList.add('active');
+        renderTable();
+        headerActions.innerHTML = `<button class="btn-primary" style="width: auto;" onclick="openRentalModal()">Buat Transaksi Lokal</button>`;
+      } else if (tabId === 'cross') {
+        document.getElementById('tab-cross').classList.add('active');
+        headerActions.innerHTML = '';
+      } else {
+        document.getElementById('tab-logistics').classList.add('active');
+        headerActions.innerHTML = '';
+      }
+    }
 
     async function loadData() {
       try {
         currentData = await apiFetch('/api/rentals');
         renderTable();
-      } catch(err) {
+      } catch (err) {
         console.error(err);
         document.getElementById('table-body').innerHTML = `<tr><td colspan="7" style="text-align:center;color:red">Error memuat data</td></tr>`;
       }
     }
 
     function renderTable() {
-      const tbody = document.getElementById('table-body');
-      
-      if (currentData.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color: var(--text-muted)">Data penyewaan masih kosong.</td></tr>`;
-        return;
-      }
+      const tbodyOngoing = document.getElementById('table-body-ongoing');
+      const tbodyHistory = document.getElementById('table-body-history');
 
-      const search = document.getElementById('searchInput').value.toLowerCase();
+      const searchOngoing = document.getElementById('searchOngoing').value.toLowerCase();
+      const searchHistory = document.getElementById('searchHistory').value.toLowerCase();
       const statusFilter = document.getElementById('filterStatus').value;
+      const startDateFilter = document.getElementById('filterStartDate').value;
+      const endDateFilter = document.getElementById('filterEndDate').value;
 
-      const filtered = currentData.filter(r => {
+      const ongoingData = currentData.filter(r => ['Active', 'Pending Payment', 'Waiting Transfer'].includes(r.status));
+      const historyData = currentData.filter(r => ['Completed', 'Cancelled'].includes(r.status));
+
+      // Filter Ongoing
+      const filteredOngoing = ongoingData.filter(r => {
         const custName = r.customerId ? r.customerId.fullName.toLowerCase() : '';
-        const matchSearch = r.rentalCode.toLowerCase().includes(search) || custName.includes(search);
-        const matchStatus = statusFilter ? r.status === statusFilter : true;
-        return matchSearch && matchStatus;
+        return r.rentalCode.toLowerCase().includes(searchOngoing) || custName.includes(searchOngoing);
       });
 
-      if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">Penyewaan tidak ada yg cocok.</td></tr>';
+      // Filter History
+      const filteredHistory = historyData.filter(r => {
+        const custName = r.customerId ? r.customerId.fullName.toLowerCase() : '';
+        const matchSearch = r.rentalCode.toLowerCase().includes(searchHistory) || custName.includes(searchHistory);
+        const matchStatus = statusFilter ? r.status === statusFilter : true;
+        
+        let matchDate = true;
+        if (startDateFilter || endDateFilter) {
+          const start = new Date(r.startDate).getTime();
+          const end = new Date(r.expectedReturnDate).getTime();
+          
+          if (startDateFilter) {
+             if (end < new Date(startDateFilter).getTime()) matchDate = false;
+          }
+          if (endDateFilter) {
+             if (start >= new Date(endDateFilter).getTime() + 86400000) matchDate = false;
+          }
+        }
+        return matchSearch && matchStatus && matchDate;
+      });
+
+      renderRows(tbodyOngoing, filteredOngoing, 'Data penyewaan berlangsung tidak ditemukan.', 'ongoing');
+      renderRows(tbodyHistory, filteredHistory, 'Data histori tidak ditemukan.', 'history');
+    }
+
+    function renderRows(tbody, data, emptyMessage, tableType) {
+      if (data.length === 0) {
+        const colSpan = tableType === 'history' ? 9 : 7;
+        tbody.innerHTML = `<tr><td colspan="${colSpan}" style="text-align:center; color: var(--text-muted)">${emptyMessage}</td></tr>`;
         return;
       }
-
       tbody.innerHTML = '';
-      filtered.forEach(r => {
+      data.forEach(r => {
         let statusClass = 'bg-primary';
-        if(r.status === 'Completed') statusClass = 'bg-success';
-        if(r.status === 'Active') statusClass = 'bg-primary';
-        if(r.status === 'Pending Payment') statusClass = 'bg-warning';
-        if(r.status === 'Cancelled') statusClass = 'bg-danger';
-        
+        if (r.status === 'Completed') statusClass = 'bg-success';
+        if (r.status === 'Waiting Transfer') statusClass = 'bg-warning';
+        if (r.status === 'Pending Payment') statusClass = 'bg-warning';
+        if (r.status === 'Cancelled') statusClass = 'bg-danger';
+
         let actionBtn = `<div style="display: flex; flex-wrap: nowrap; gap: 5px;">
                          <button class="action-btn" onclick="showDetail('${r._id}')">Detail</button>`;
-        
-        if (r.status === 'Pending Payment') {
+
+        if (r.status === 'Waiting Transfer') {
+          // Hanya tampilkan Konfirmasi Tiba jika transfer sudah disetujui cabang lain
+          if (r.transferId && r.transferId.status === 'Approved') {
+            actionBtn += `<button class="action-btn bg-success" onclick="confirmArrival('${r._id}')">Konfirmasi Tiba</button>`;
+          }
+        } else if (r.status === 'Pending Payment') {
           actionBtn += `<button class="action-btn bg-success" onclick="confirmPayment('${r._id}')">Konfirmasi Payment</button>`;
-          actionBtn += `<button class="action-btn reject" onclick="cancelRental('${r._id}')">Batalkan Transaksi</button>`;
+          actionBtn += `<button class="action-btn reject" onclick="cancelRental('${r._id}')">Batal</button>`;
         } else if (r.status === 'Active') {
           actionBtn += `<button class="action-btn bg-success" onclick="returnVehicle('${r._id}')">Selesaikan Sewa</button>`;
         }
@@ -193,22 +347,39 @@
 
         const tr = document.createElement('tr');
         const d = new Date(r.startDate).toLocaleDateString('id-ID');
-        tr.innerHTML = `
+        
+        let colsHtml = `
           <td>${r.rentalCode}</td>
           <td>${r.customerId ? r.customerId.fullName : '-'}</td>
           <td>${r.vehicleId ? r.vehicleId.brand + ' ' + r.vehicleId.model : '-'}</td>
+        `;
+
+        if (tableType === 'history') {
+          const jenis = r.isCrossBranch ? 'Lintas Cabang' : 'Lokal';
+          const asal = r.vehicleId && r.vehicleId.homeBranch ? `Cabang ${r.vehicleId.homeBranch}` : '-';
+          colsHtml += `
+            <td><span class="badge-status ${r.isCrossBranch ? 'bg-primary' : 'bg-success'}">${jenis}</span></td>
+            <td>${asal}</td>
+          `;
+        }
+
+        colsHtml += `
           <td>${d}</td>
           <td>${r.totalDays} hari</td>
           <td><span class="badge-status ${statusClass}">${r.status}</span></td>
           <td>${actionBtn}</td>
         `;
+
+        tr.innerHTML = colsHtml;
         tbody.appendChild(tr);
       });
     }
 
     function showDetail(id) {
       const item = currentData.find(x => x._id === id);
-      if(!item) return;
+      if (!item) return;
+
+      document.querySelector('#detailModal .modal-header h3').innerText = 'Detail Rental';
       const content = document.getElementById('detailContent');
       let html = '';
       for (const [key, value] of Object.entries(item)) {
@@ -217,31 +388,75 @@
       content.innerHTML = html;
       document.getElementById('detailModal').classList.add('show');
     }
+
+    function showVehicleDetail(id) {
+      const v = allCrossVehicles.find(x => x._id === id);
+      if (!v) return;
+      
+      document.querySelector('#detailModal .modal-header h3').innerText = 'Detail Kendaraan';
+      const content = document.getElementById('detailContent');
+      let html = '';
+      for (const [key, value] of Object.entries(v)) {
+        if (key.startsWith('_') || key === '__v') continue;
+        html += `<div class="detail-item"><span class="detail-label">${key}</span><span class="detail-value">${typeof value === 'object' ? JSON.stringify(value) : value}</span></div>`;
+      }
+      content.innerHTML = html;
+      document.getElementById('detailModal').classList.add('show');
+    }
+    
+    async function fetchAvailableVehicles() {
+      try {
+        const startVal = document.getElementById('startDate').value;
+        const daysVal = parseInt(document.getElementById('totalDays').value) || 1;
+        
+        if (!startVal) return;
+
+        const start = new Date(startVal);
+        const end = new Date(start.getTime() + daysVal * 24 * 60 * 60 * 1000);
+
+        const vSelect = document.getElementById('vehicleId');
+        vSelect.innerHTML = '<option value="">Memuat kendaraan (Lokal)...</option>';
+        vSelect.disabled = true;
+
+        let localVehs = await apiFetch(`/api/vehicles?startDate=${start.toISOString()}&endDate=${end.toISOString()}`);
+        vehicles = localVehs;
+        
+        vSelect.innerHTML = '<option value="">Pilih Kendaraan...</option>';
+        if (vehicles.length === 0) {
+           vSelect.innerHTML = '<option value="">Tidak ada kendaraan lokal tersedia</option>';
+        } else {
+           vehicles.forEach(v => {
+             vSelect.innerHTML += `<option value="${v._id}">${v.brand} ${v.model} - ${v.plateNumber} (Rp ${v.dailyRate}/hr)</option>`;
+           });
+           vSelect.disabled = false;
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
     function closeDetailModal() {
       document.getElementById('detailModal').classList.remove('show');
     }
 
     async function openRentalModal() {
       try {
-        vehicles = await apiFetch('/api/vehicles');
-        customers = await apiFetch('/api/customers');
-        
-        const vSelect = document.getElementById('vehicleId');
-        vSelect.innerHTML = '<option value="">Pilih Kendaraan (Tersedia)...</option>';
-        vehicles.filter(v => v.status === 'Available').forEach(v => {
-          vSelect.innerHTML += `<option value="${v._id}">${v.brand} ${v.model} - ${v.plateNumber} (Rp ${v.dailyRate}/hr)</option>`;
-        });
+        document.getElementById('rentalForm').reset();
+        document.getElementById('startDate').value = new Date().toISOString().split('T')[0];
+        document.getElementById('totalDays').value = 1;
 
+        customers = await apiFetch('/api/customers');
         const cSelect = document.getElementById('customerId');
         cSelect.innerHTML = '<option value="">Pilih Customer...</option>';
         customers.forEach(c => {
           cSelect.innerHTML += `<option value="${c._id}">${c.fullName}</option>`;
         });
 
+        await fetchAvailableVehicles();
         document.getElementById('rentalModal').classList.add('show');
-      } catch(err) { alert(err.message); }
+      } catch (err) { alert(err.message); }
     }
-    
+
     function closeRentalModal() {
       document.getElementById('rentalModal').classList.remove('show');
     }
@@ -250,10 +465,18 @@
       e.preventDefault();
       const vehicleId = document.getElementById('vehicleId').value;
       const customerId = document.getElementById('customerId').value;
-      const totalDays = document.getElementById('totalDays').value;
-      
+      const totalDays = parseInt(document.getElementById('totalDays').value);
+      const startVal = document.getElementById('startDate').value;
+
       const v = vehicles.find(x => x._id === vehicleId);
       const totalPrice = v.dailyRate * totalDays;
+
+      const startDate = new Date(startVal);
+      const expectedReturnDate = new Date(startDate.getTime() + totalDays * 24 * 60 * 60 * 1000);
+
+      const vSelect = document.getElementById('vehicleId');
+      const selectedOption = vSelect.options[vSelect.selectedIndex];
+      const targetBranchCode = ''; // Always empty for local rental
 
       try {
         await apiFetch('/api/rentals', {
@@ -261,42 +484,247 @@
           body: JSON.stringify({
             rentalCode: 'RNT-' + Date.now(),
             vehicleId, customerId, totalDays, totalPrice,
-            startDate: new Date(),
-            expectedReturnDate: new Date(Date.now() + totalDays * 24 * 60 * 60 * 1000)
+            startDate: startDate.toISOString(),
+            expectedReturnDate: expectedReturnDate.toISOString(),
+            targetBranchCode
           })
         });
         closeRentalModal();
         loadData();
         alert('Transaksi berhasil dibuat!');
-      } catch(err) { alert(err.message); }
+      } catch (err) { alert(err.message); }
     });
 
+    // --- Cross Branch Shop Logic ---
+    async function fetchCrossBranchVehicles() {
+      const customerId = document.getElementById('crossCustomer').value;
+      const startVal = document.getElementById('crossStartDate').value;
+      const daysVal = parseInt(document.getElementById('crossTotalDays').value) || 1;
+
+      const container = document.getElementById('crossBranchResults');
+
+      if (!customerId || !startVal || !daysVal) {
+        container.innerHTML = '<p style="color: var(--text-muted); padding: 2rem; text-align: center; border: 1px dashed var(--border-color); border-radius: 8px;">Pilih Customer, Tanggal, dan Total Hari untuk melihat kendaraan dari cabang lain.</p>';
+        return;
+      }
+
+      container.innerHTML = '<p style="padding: 2rem; text-align: center;">Mencari kendaraan ke seluruh cabang...</p>';
+
+      const start = new Date(startVal);
+      const end = new Date(start.getTime() + daysVal * 24 * 60 * 60 * 1000);
+
+      let fetchedVehicles = [];
+      const fetchPromises = [];
+
+      for (const [branch, port] of Object.entries(ports)) {
+        if (branch !== currentUser.branchCode) {
+          const p = fetch(`http://127.0.0.1:${port}/api/vehicles/available?startDate=${start.toISOString()}&endDate=${end.toISOString()}`)
+            .then(r => r.json())
+            .then(data => {
+              if (data.vehicles) {
+                data.vehicles.forEach(v => {
+                  v.targetBranchCode = branch;
+                  fetchedVehicles.push(v);
+                });
+              }
+            }).catch(err => console.error('Gagal fetch cabang', branch));
+          fetchPromises.push(p);
+        }
+      }
+      await Promise.all(fetchPromises);
+      
+      allCrossVehicles = fetchedVehicles;
+      renderCrossBranchTables();
+    }
+
+    function renderCrossBranchTables() {
+      const container = document.getElementById('crossBranchResults');
+      
+      const customerId = document.getElementById('crossCustomer').value;
+      if (!customerId) return;
+
+      const search = document.getElementById('searchCross').value.toLowerCase();
+      const filtered = allCrossVehicles.filter(v => 
+        (v.brand + ' ' + v.model).toLowerCase().includes(search) || v.plateNumber.toLowerCase().includes(search)
+      );
+
+      if (filtered.length === 0) {
+        container.innerHTML = '<p style="padding: 2rem; text-align: center; color: var(--text-muted);">Tidak ada kendaraan yang tersedia atau cocok dengan pencarian.</p>';
+        return;
+      }
+
+      const grouped = {};
+      for (const [branch, port] of Object.entries(ports)) {
+         if (branch !== currentUser.branchCode) grouped[branch] = [];
+      }
+      
+      filtered.forEach(v => {
+         if (grouped[v.targetBranchCode]) grouped[v.targetBranchCode].push(v);
+      });
+
+      let html = '';
+      for (const [branch, vehicles] of Object.entries(grouped)) {
+        if (vehicles.length > 0) {
+          html += `<div style="margin-bottom: 2rem;">
+            <h4>Cabang ${branch}</h4>
+            <div class="table-container">
+              <table>
+                <thead><tr><th>Kendaraan</th><th>Plat Nomor</th><th>Harga (Per Hari)</th><th>Aksi</th></tr></thead>
+                <tbody>`;
+          
+          vehicles.forEach(v => {
+            const existingReq = currentData.find(r => r.vehicleId && r.vehicleId._id === v._id && r.status === 'Waiting Transfer');
+            
+            let btnHtml = `<div style="display: flex; flex-wrap: nowrap; gap: 5px;">
+                           <button class="action-btn" onclick="showVehicleDetail('${v._id}')">Detail</button>`;
+            if (existingReq) {
+              btnHtml += `<button class="action-btn reject" onclick="cancelCrossBranchRequest('${existingReq._id}')">Cancel Request</button>`;
+            } else {
+              btnHtml += `<button class="action-btn bg-primary" onclick="requestCrossBranch('${v._id}', '${v.targetBranchCode}', ${v.dailyRate})">Request</button>`;
+            }
+            btnHtml += `</div>`;
+
+            html += `<tr>
+              <td>${v.brand} ${v.model}</td>
+              <td>${v.plateNumber}</td>
+              <td>Rp ${v.dailyRate}</td>
+              <td>${btnHtml}</td>
+            </tr>`;
+          });
+
+          html += `</tbody></table></div></div>`;
+        }
+      }
+      
+      if (html === '') {
+        container.innerHTML = '<p style="padding: 2rem; text-align: center; color: var(--text-muted);">Tidak ada kendaraan yang tersedia.</p>';
+      } else {
+        container.innerHTML = html;
+      }
+    }
+
+    async function requestCrossBranch(vehicleId, targetBranchCode, dailyRate) {
+      const customerId = document.getElementById('crossCustomer').value;
+      const startVal = document.getElementById('crossStartDate').value;
+      const totalDays = parseInt(document.getElementById('crossTotalDays').value);
+
+      const startDate = new Date(startVal);
+      const expectedReturnDate = new Date(startDate.getTime() + totalDays * 24 * 60 * 60 * 1000);
+      const totalPrice = dailyRate * totalDays;
+
+      try {
+        await apiFetch('/api/rentals', {
+          method: 'POST',
+          body: JSON.stringify({
+            rentalCode: 'RNT-' + Date.now(),
+            vehicleId, customerId, totalDays, totalPrice,
+            startDate: startDate.toISOString(),
+            expectedReturnDate: expectedReturnDate.toISOString(),
+            targetBranchCode
+          })
+        });
+        alert('Request penyewaan lintas cabang berhasil dikirim!');
+        await loadData();
+        renderCrossBranchTables();
+      } catch (err) { alert(err.message); }
+    }
+
+    async function cancelCrossBranchRequest(rentalId) {
+      if (!confirm('Anda yakin ingin membatalkan request lintas cabang ini?')) return;
+      try {
+        await apiFetch(`/api/rentals/${rentalId}/cancel`, { method: 'PUT' });
+        alert('Request berhasil dibatalkan!');
+        await loadData();
+        renderCrossBranchTables();
+      } catch (err) { alert(err.message); }
+    }
+    // --- End Cross Branch Shop Logic ---
+
     async function returnVehicle(id) {
-      if(!confirm('Konfirmasi penyewaan selesai dan mobil telah dikembalikan?')) return;
+      if (!confirm('Konfirmasi penyewaan selesai dan mobil telah dikembalikan?')) return;
       try {
         await apiFetch(`/api/rentals/${id}/return`, { method: 'PUT' });
         alert('Transaksi sewa selesai!');
         loadData();
-      } catch(err) { alert(err.message); }
+      } catch (err) { alert(err.message); }
     }
 
     async function confirmPayment(id) {
-      if(!confirm('Konfirmasi pembayaran telah diterima?')) return;
+      if (!confirm('Konfirmasi pembayaran telah diterima?')) return;
       try {
         await apiFetch(`/api/rentals/${id}/confirm-payment`, { method: 'PUT' });
         alert('Pembayaran berhasil dikonfirmasi!');
         loadData();
-      } catch(err) { alert(err.message); }
+      } catch (err) { alert(err.message); }
     }
 
     async function cancelRental(id) {
-      if(!confirm('Anda yakin ingin membatalkan transaksi ini?')) return;
+      if (!confirm('Anda yakin ingin membatalkan transaksi ini?')) return;
       try {
         await apiFetch(`/api/rentals/${id}/cancel`, { method: 'PUT' });
         alert('Transaksi berhasil dibatalkan!');
         loadData();
-      } catch(err) { alert(err.message); }
+      } catch (err) { alert(err.message); }
+    }
+
+    async function confirmArrival(rentalId) {
+      if (!confirm('Konfirmasi mobil pesanan ini telah tiba di cabang Anda?')) return;
+      try {
+        await apiFetch(`/api/rentals/${rentalId}/arrive`, { method: 'POST' });
+        alert('Kendaraan telah tiba! Customer bisa mulai membayar.');
+        loadData();
+      } catch (err) { alert(err.message); }
+    }
+
+    async function loadIncomingTransfers() {
+      try {
+        const transfers = await apiFetch('/api/transfers');
+        
+        const incoming = transfers.filter(t => t.fromBranch === currentUser.branchCode && t.status === 'Requested');
+        const tbodyIn = document.getElementById('incoming-results');
+        tbodyIn.innerHTML = '';
+        
+        if (incoming.length > 0) {
+          document.getElementById('logistics-badge').innerText = incoming.length;
+          document.getElementById('logistics-badge').style.display = 'inline-block';
+        } else {
+          document.getElementById('logistics-badge').style.display = 'none';
+        }
+
+        if(incoming.length === 0) {
+          tbodyIn.innerHTML = '<tr><td colspan="5" style="text-align:center">Tidak ada request masuk.</td></tr>';
+        } else {
+          incoming.forEach(t => {
+            let actionBtn = `<button class="action-btn bg-success" onclick="processTransfer('${t._id}', 'approve')">Approve (Kirim)</button>
+                             <button class="action-btn reject" onclick="processTransfer('${t._id}', 'reject')">Reject</button>`;
+            
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td>${t.transferCode}</td>
+              <td>Cabang ${t.toBranch}</td>
+              <td>${t.vehicleId?.brand || '(Data Hapus)'} ${t.vehicleId?.model || ''}</td>
+              <td><span class="badge-status bg-warning">${t.status}</span></td>
+              <td>
+                <div style="display: flex; flex-wrap: nowrap; gap: 5px;">${actionBtn}</div>
+              </td>
+            `;
+            tbodyIn.appendChild(tr);
+          });
+        }
+      } catch(err) { console.error('Error loadIncomingTransfers:', err); }
+    }
+
+    async function processTransfer(id, action) {
+      try {
+        await apiFetch(`/api/transfers/${id}/${action}`, { method: 'POST' });
+        loadIncomingTransfers();
+        alert('Sukses memproses request logistik!');
+      } catch(err) { 
+        console.error('Error processTransfer:', err);
+        alert(err.message); 
+      }
     }
   </script>
 </body>
+
 </html>

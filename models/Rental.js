@@ -12,6 +12,8 @@ const rentalSchema = new mongoose.Schema({
   actualReturnDate: { type: Date },
   totalDays: { type: Number, required: true },
   totalPrice: { type: Number, required: true },
+  isCrossBranch: { type: Boolean, default: false },
+  transferId: { type: mongoose.Schema.Types.ObjectId, ref: 'Transfer' },
   status: { 
     type: String, 
     enum: ['Pending', 'Waiting Transfer', 'Pending Payment', 'Active', 'Completed', 'Cancelled'],
