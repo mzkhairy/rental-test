@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - RentSync</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      RentSync
+    </div>
+    <nav>
+      <a href="/dashboard.html" class="nav-link active">Dashboard</a>
+      <a href="/rentals.html" class="nav-link">Penyewaan</a>
+      <a href="/vehicles.html" class="nav-link">Kendaraan</a>
+      <a href="/customers.html" class="nav-link">Pelanggan</a>
+      <a href="/employees.html" class="nav-link">Karyawan</a>
+      <a href="/transfers.html" class="nav-link">Transfer (P2P)</a>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <header class="topbar">
+      <div class="topbar-left" id="topbar-branch">
+        Loading...
+      </div>
+      <div class="topbar-right">
+        <div class="notification-bell" id="notif-bell">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+          <span class="badge" id="notif-badge">0</span>
+          
+          <div class="notif-dropdown" id="notif-dropdown">
+            <div class="notif-header">Notifikasi Transfer Masuk</div>
+            <div class="notif-body" id="notif-body">
+              <!-- JS Populated -->
+            </div>
+            <div class="notif-footer">
+              <a href="/transfers.html">Lihat Semua Transfer</a>
+            </div>
+          </div>
+        </div>
+        
+        <div class="user-profile" onclick="logout()" title="Logout">
+          <div class="avatar" id="topbar-avatar">U</div>
+          <span id="topbar-username">User</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+        </div>
+      </div>
+    </header>
+
+    <div class="page-content">
+      <div class="page-header">
+        <h1 class="page-title">Dashboard</h1>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <h3>Total Kendaraan (Di Cabang Ini)</h3>
+          <div class="value" id="stat-total-vehicles">0</div>
+        </div>
+        <div class="stat-card">
+          <h3>Tersedia</h3>
+          <div class="value" id="stat-available-vehicles" style="color: var(--success-color)">0</div>
+        </div>
+        <div class="stat-card">
+          <h3>Rental Aktif</h3>
+          <div class="value" id="stat-active-rentals" style="color: var(--primary-color)">0</div>
+        </div>
+        <div class="stat-card">
+          <h3>Transfer Proses</h3>
+          <div class="value" id="stat-active-transfers" style="color: var(--warning-color)">0</div>
+        </div>
+      </div>
+      
+    </div>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/notifications.js"></script>
+  <script src="/js/dashboard.js"></script>
+</body>
+</html>

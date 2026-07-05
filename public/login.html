@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - RentSync</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="auth-container">
+    <div class="auth-card">
+      <h2>RentSync</h2>
+      <p id="branch-info">Sistem Manajemen Cabang</p>
+      
+      <form id="login-form">
+        <div class="form-group">
+          <label for="emailOrCode">Email / ID Karyawan</label>
+          <input type="text" id="emailOrCode" class="form-control" required placeholder="admin1@jkt.com">
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" class="form-control" required placeholder="••••••••">
+        </div>
+        <button type="submit" class="btn-primary">Masuk</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    // Fetch branch info on load to make it dynamic
+    fetch('/api/health').then(r => r.json()).then(data => {
+      document.getElementById('branch-info').innerText = `Cabang ${data.branchName} (${data.branchCode})`;
+      document.title = `Login - ${data.branchName} | RentSync`;
+    });
+
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const emailOrCode = document.getElementById('emailOrCode').value;
+      const password = document.getElementById('password').value;
+      const btn = e.target.querySelector('button');
+      btn.textContent = 'Loading...';
+      
+      try {
+        const data = await apiFetch('/api/auth/login', {
+          method: 'POST',
+          body: JSON.stringify({ emailOrCode, password })
+        });
+        
+        if (data && data.user) {
+          localStorage.setItem('user', JSON.stringify(data.user));
+          window.location.href = '/dashboard.html';
+        }
+      } catch (err) {
+        alert(err.message || 'Terjadi kesalahan saat login.');
+        btn.textContent = 'Masuk';
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Pelanggan - RentSync</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .search-filter-box { display: flex; gap: 1rem; margin-bottom: 1.5rem; }
+    .search-filter-box input { flex: 1; }
+    .detail-item { margin-bottom: 0.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color); }
+    .detail-label { font-weight: 600; color: var(--text-muted); font-size: 0.85rem; display: block; }
+    .detail-value { color: var(--text-main); font-size: 0.95rem; word-break: break-all; }
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="sidebar-logo">RentSync</div>
+    <nav>
+      <a href="/dashboard.html" class="nav-link">Dashboard</a>
+      <a href="/rentals.html" class="nav-link">Penyewaan</a>
+      <a href="/vehicles.html" class="nav-link">Kendaraan</a>
+      <a href="/customers.html" class="nav-link active">Pelanggan</a>
+      <a href="/employees.html" class="nav-link">Karyawan</a>
+      <a href="/transfers.html" class="nav-link">Transfer (P2P)</a>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <header class="topbar">
+      <div class="topbar-left" id="topbar-branch">Loading...</div>
+      <div class="topbar-right">
+        <div class="notification-bell" id="notif-bell">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+          <span class="badge" id="notif-badge">0</span>
+          <div class="notif-dropdown" id="notif-dropdown">
+            <div class="notif-header">Notifikasi Transfer Masuk</div>
+            <div class="notif-body" id="notif-body"></div>
+          </div>
+        </div>
+        <div class="user-profile" onclick="logout()" title="Logout">
+          <div class="avatar" id="topbar-avatar">U</div>
+          <span id="topbar-username">User</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="page-content">
+      <div class="page-header">
+        <h1 class="page-title">Daftar Pelanggan</h1>
+        <button class="btn-primary" style="width: auto;" onclick="openModal()">Tambah Pelanggan</button>
+      </div>
+
+      <div class="search-filter-box" style="display: flex; justify-content: space-between; flex-wrap: wrap;">
+        <div style="display: flex; gap: 12px; flex: 1; max-width: 500px;">
+          <input type="text" id="searchInput" class="form-control" placeholder="Cari nama, NIK, atau no telepon..." style="width: 100%; max-width: 400px; height: 44px;">
+          <button class="btn-primary" style="width: 60px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" onclick="renderTable()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Kode</th>
+              <th>Nama Lengkap</th>
+              <th>NIK</th>
+              <th>Telepon</th>
+              <th>Cabang</th>
+              <th>Status Pinjam</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="table-body">
+             <tr><td colspan="5" style="text-align:center">Memuat...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal Form -->
+  <div id="crudModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modalTitle">Tambah Pelanggan</h3>
+        <button class="close-btn" onclick="closeModal()">&times;</button>
+      </div>
+      <form id="crudForm">
+        <input type="hidden" id="custId">
+        <div class="form-group">
+          <label>Kode Pelanggan</label>
+          <input type="text" id="customerCode" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label>Nama Lengkap</label>
+          <input type="text" id="fullName" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label>NIK</label>
+          <input type="text" id="identityNumber" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label>No. SIM</label>
+          <input type="text" id="driverLicense" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label>Telepon</label>
+          <input type="text" id="phone" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="email" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label>Alamat</label>
+          <input type="text" id="address" class="form-control" required>
+        </div>
+        <button type="submit" class="btn-primary">Simpan</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Detail Modal -->
+  <div id="detailModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Detail Pelanggan</h3>
+        <button class="close-btn" onclick="closeDetailModal()">&times;</button>
+      </div>
+      <div id="detailContent"></div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/notifications.js"></script>
+  <script>
+    let currentData = [];
+    document.addEventListener('DOMContentLoaded', async () => {
+      const user = await checkAuth();
+      if (!user) return;
+      initTopbar();
+      loadData();
+    });
+
+    async function loadData() {
+      try {
+        currentData = await apiFetch('/api/customers');
+        renderTable();
+      } catch (err) {
+        console.error('Error memuat data:', err);
+        document.getElementById('table-body').innerHTML = `<tr><td colspan="7" style="text-align:center;color:red;">Error memuat data.</td></tr>`;
+      }
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('table-body');
+      
+      if (currentData.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color: var(--text-muted)">Data pelanggan masih kosong.</td></tr>`;
+        return;
+      }
+
+      const search = document.getElementById('searchInput').value.toLowerCase();
+
+      const filtered = currentData.filter(c => {
+        return c.fullName.toLowerCase().includes(search) || 
+               c.identityNumber.toLowerCase().includes(search) ||
+               c.phone.toLowerCase().includes(search);
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center">Pelanggan tidak ada yg cocok.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = '';
+      filtered.forEach(c => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${c.customerCode}</td>
+          <td>${c.fullName}</td>
+          <td>${c.identityNumber}</td>
+          <td>${c.phone}</td>
+          <td><span class="badge-status bg-primary">${c.branchCode || '-'}</span></td>
+          <td><span class="badge-status ${c.isRenting ? 'bg-warning' : 'bg-success'}">${c.isRenting ? 'Sedang Meminjam' : 'Tidak Meminjam'}</span></td>
+          <td>
+            <div style="display: flex; flex-wrap: nowrap; gap: 5px;">
+              <button class="action-btn" onclick="showDetail('${c._id}')">Detail</button>
+              <button class="action-btn" onclick="openModal('${c._id}')">Edit</button>
+              <button class="action-btn reject" onclick="deleteData('${c._id}')">Hapus</button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function showDetail(id) {
+      const item = currentData.find(x => x._id === id);
+      if(!item) return;
+      const content = document.getElementById('detailContent');
+      let html = '';
+      for (const [key, value] of Object.entries(item)) {
+        html += `<div class="detail-item"><span class="detail-label">${key}</span><span class="detail-value">${JSON.stringify(value)}</span></div>`;
+      }
+      content.innerHTML = html;
+      document.getElementById('detailModal').classList.add('show');
+    }
+    function closeDetailModal() {
+      document.getElementById('detailModal').classList.remove('show');
+    }
+
+    function openModal(id = null) {
+      const form = document.getElementById('crudForm');
+      form.reset();
+      document.getElementById('custId').value = id || '';
+      document.getElementById('modalTitle').textContent = id ? 'Edit Pelanggan' : 'Tambah Pelanggan';
+      
+      if (id) {
+        const item = currentData.find(x => x._id === id);
+        if (item) {
+          document.getElementById('customerCode').value = item.customerCode;
+          document.getElementById('fullName').value = item.fullName;
+          document.getElementById('identityNumber').value = item.identityNumber;
+          document.getElementById('driverLicense').value = item.driverLicense;
+          document.getElementById('phone').value = item.phone;
+          document.getElementById('email').value = item.email;
+          document.getElementById('address').value = item.address;
+        }
+      } else {
+        document.getElementById('customerCode').value = 'CUST-' + Date.now();
+      }
+      document.getElementById('crudModal').classList.add('show');
+    }
+
+    function closeModal() {
+      document.getElementById('crudModal').classList.remove('show');
+    }
+
+    document.getElementById('crudForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('custId').value;
+      const payload = {
+        customerCode: document.getElementById('customerCode').value,
+        fullName: document.getElementById('fullName').value,
+        identityNumber: document.getElementById('identityNumber').value,
+        driverLicense: document.getElementById('driverLicense').value,
+        phone: document.getElementById('phone').value,
+        email: document.getElementById('email').value,
+        address: document.getElementById('address').value,
+      };
+
+      try {
+        if (id) {
+          await apiFetch(`/api/customers/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+        } else {
+          await apiFetch('/api/customers', { method: 'POST', body: JSON.stringify(payload) });
+        }
+        closeModal();
+        loadData();
+      } catch (err) {
+        console.error('Error save:', err);
+        alert(err.message);
+      }
+    });
+
+    async function deleteData(id) {
+      if (!confirm('Yakin hapus data ini?')) return;
+      try {
+        await apiFetch(`/api/customers/${id}`, { method: 'DELETE' });
+        loadData();
+      } catch (err) {
+        console.error('Error delete:', err);
+        alert(err.message);
+      }
+    }
+  </script>
+</body>
+</html>
