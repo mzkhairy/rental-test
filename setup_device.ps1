@@ -82,9 +82,9 @@ Write-Host "`n[1/6] Menghentikan service mongod lama..."
 Stop-Process -Name "mongod" -Force -ErrorAction SilentlyContinue
 Start-Sleep -Seconds 2
 
-Write-Host "`n[2/6] Membuka port $myPort di Windows Firewall..."
-New-NetFirewallRule -DisplayName "MongoDB Rentsync $branchCode" -Direction Inbound -LocalPort $myPort -Protocol TCP -Action Allow -ErrorAction SilentlyContinue | Out-Null
-Write-Host "Port $myPort berhasil dibuka di firewall."
+Write-Host "`n[2/6] Membuka port 27017-27026 di Windows Firewall..."
+New-NetFirewallRule -DisplayName "MongoDB Rentsync P2P" -Direction Inbound -LocalPort 27017-27026 -Protocol TCP -Action Allow -Profile Any -ErrorAction SilentlyContinue | Out-Null
+Write-Host "Port 27017-27026 berhasil dibuka di semua profil firewall."
 
 Write-Host "`n[3/6] Wiping database lokal untuk cabang $branchCode..."
 $dbPath = "$PWD\data\$branchCode"
