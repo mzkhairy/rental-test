@@ -97,11 +97,16 @@ rs.initiate({
     Start-Sleep -Seconds 10
 }
 
-Write-Host "`n[5/5] Instalasi Dependencies dan Seeding..."
+Write-Host "`n[5/5] Instalasi Dependencies..."
 npm install
-$env:NETWORK_MODE = $network
-node seeders/seed.js
 
+if ($branchCode -eq "bks") {
+    Write-Host "`n[*] Node Primary Terdeteksi. Menjalankan Seeding..."
+    $env:NETWORK_MODE = $network
+    node seeders/seed.js
+} else {
+    Write-Host "`n[*] Node Secondary Terdeteksi. Melewati proses seeding (data otomatis tersinkronisasi dari Primary)."
+}
 Write-Host "`n===================================="
 Write-Host " Setup Selesai Sepenuhnya! "
 Write-Host "===================================="

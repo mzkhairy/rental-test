@@ -1,4 +1,4 @@
-require('dotenv').config({ path: __dirname + '/../.env.jkt' });
+require('dotenv').config({ path: __dirname + '/../.env' });
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 
