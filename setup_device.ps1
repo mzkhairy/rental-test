@@ -55,16 +55,43 @@ $myIp = $cfg[$branchCode].ip
 $myPort = $cfg[$branchCode].port
 $mongoUri = "mongodb://$($cfg['bks'].ip):$($cfg['bks'].port),$($cfg['bgr'].ip):$($cfg['bgr'].port),$($cfg['dpk'].ip):$($cfg['dpk'].port),$($cfg['jkt'].ip):$($cfg['jkt'].port),$($cfg['tgr'].ip):$($cfg['tgr'].port)/rentsync_$branchCode?replicaSet=rsRental"
 
-Write-Host "`n[1/5] Menghentikan service mongod lama..."
+# Cek ketersediaan MongoDB
+$mongodCmd = "mongod"
+if (-not (Get-Command $mongodCmd -ErrorAction SilentlyContinue)) {
+    $found = $false
+    $possiblePaths = @(
+        "C:\Program Files\MongoDB\Server\*\bin\mongod.exe",
+        "C:\Program Files (x86)\MongoDB\Server\*\bin\mongod.exe"
+    )
+    foreach ($p in $possiblePaths) {
+        $resolved = Resolve-Path $p -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Path -First 1
+        if ($resolved) {
+            $mongodCmd = "`"$resolved`""
+            $found = $true
+            break
+        }
+    }
+    if (-not $found) {
+        Write-Host "`n[ERROR] MongoDB (mongod.exe) tidak terdeteksi di perangkat ini!" -ForegroundColor Red
+        Write-Host "Pastikan MongoDB sudah di-install. Jika sudah, Anda harus menambahkannya ke 'Environment Variables (PATH)' atau biarkan script ini mencari jika di-install di lokasi default."
+        exit
+    }
+}
+
+Write-Host "`n[1/6] Menghentikan service mongod lama..."
 Stop-Process -Name "mongod" -Force -ErrorAction SilentlyContinue
 Start-Sleep -Seconds 2
 
-Write-Host "`n[2/5] Wiping database lokal untuk cabang $branchCode..."
+Write-Host "`n[2/6] Membuka port $myPort di Windows Firewall..."
+New-NetFirewallRule -DisplayName "MongoDB Rentsync $branchCode" -Direction Inbound -LocalPort $myPort -Protocol TCP -Action Allow -ErrorAction SilentlyContinue | Out-Null
+Write-Host "Port $myPort berhasil dibuka di firewall."
+
+Write-Host "`n[3/6] Wiping database lokal untuk cabang $branchCode..."
 $dbPath = "$PWD\data\$branchCode"
 if (Test-Path $dbPath) { Remove-Item -Path $dbPath -Recurse -Force }
 New-Item -ItemType Directory -Path $dbPath -Force | Out-Null
 
-Write-Host "`n[3/5] Menyesuaikan file .env..."
+Write-Host "`n[4/6] Menyesuaikan file .env..."
 $envContent = Get-Content -Path ".env.example" -Raw
 $envContent = $envContent -replace "BRANCH_CODE=XYZ", "BRANCH_CODE=$($branchCode.ToUpper())"
 $envContent = $envContent -replace "BRANCH_NAME=NamaCabang", "BRANCH_NAME=$branchName"
@@ -73,31 +100,53 @@ $envContent = $envContent -replace "MONGO_URI=.*", "MONGO_URI=$mongoUri"
 Set-Content -Path ".env" -Value $envContent
 Write-Host "File .env berhasil dibuat dengan API Port 4000."
 
-Write-Host "`n[4/5] Starting mongod di background (Port: $myPort, Bind: 0.0.0.0)..."
-Start-Process -WindowStyle Hidden mongod -ArgumentList "--replSet rsRental --port $myPort --bind_ip_all --dbpath `"$dbPath`""
+Write-Host "`n[5/6] Starting mongod di background (Port: $myPort, Bind: 0.0.0.0)..."
+Start-Process -WindowStyle Hidden -FilePath cmd.exe -ArgumentList "/c $mongodCmd --replSet rsRental --port $myPort --bind_ip_all --dbpath `"$dbPath`""
 Write-Host "Menunggu 10 detik agar MongoDB siap..."
 Start-Sleep -Seconds 10
 
 if ($branchCode -eq "bks") {
-    Write-Host "`n[*] Node Primary (Bekasi) Terdeteksi. Menginisiasi Replica Set rsRental..."
+    Write-Host "`n[*] Node Primary (Bekasi) Terdeteksi. Menginisiasi Replica Set rsRental (hanya Bekasi)..."
     $initCmd = @"
 rs.initiate({
   _id: 'rsRental',
   members: [
-    { _id: 0, host: '$($cfg['bks'].ip):$($cfg['bks'].port)' },
-    { _id: 1, host: '$($cfg['bgr'].ip):$($cfg['bgr'].port)' },
-    { _id: 2, host: '$($cfg['dpk'].ip):$($cfg['dpk'].port)' },
-    { _id: 3, host: '$($cfg['jkt'].ip):$($cfg['jkt'].port)' },
-    { _id: 4, host: '$($cfg['tgr'].ip):$($cfg['tgr'].port)' }
+    { _id: 0, host: '$($cfg['bks'].ip):$($cfg['bks'].port)' }
   ]
 })
+quit()
 "@
     $initCmd | mongosh --port $myPort --quiet
     Write-Host "Menunggu Replica Set stabil (10 detik)..."
     Start-Sleep -Seconds 10
+    
+    while ($true) {
+        $addMore = Read-Host "`n[OPTIONAL] Apakah ada cabang lain yang SUDAH ONLINE dan ingin ditambahkan ke Replica Set sekarang? (y/n)"
+        if ($addMore -match "^[yY]$") {
+            Write-Host "1. Bogor (BGR)`n2. Depok (DPK)`n3. Jakarta (JKT)`n4. Tangerang (TGR)"
+            $addChoice = Read-Host "Pilih cabang yang SUDAH ONLINE (1-4)"
+            $addCode = ""
+            switch ($addChoice) {
+                "1" { $addCode = "bgr" }
+                "2" { $addCode = "dpk" }
+                "3" { $addCode = "jkt" }
+                "4" { $addCode = "tgr" }
+            }
+            if ($addCode) {
+                Write-Host "Menambahkan $addCode ke Replica Set..."
+                $addCmd = "rs.add('$($cfg[$addCode].ip):$($cfg[$addCode].port)'); quit()"
+                $addCmd | mongosh --port $myPort --quiet
+                Write-Host "Perintah penambahan $addCode dikirim."
+            } else {
+                Write-Host "Pilihan tidak valid."
+            }
+        } else {
+            break
+        }
+    }
 }
 
-Write-Host "`n[5/5] Instalasi Dependencies..."
+Write-Host "`n[6/6] Instalasi Dependencies..."
 npm install
 
 if ($branchCode -eq "bks") {
