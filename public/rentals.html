@@ -1033,11 +1033,11 @@
         Cabang ${currentUser.branchCode} (Lokasi Saat Ini)
       </label>`;
       
-      for (const branch of Object.keys(ports)) {
-        if (branch !== currentUser.branchCode) {
+      for (const branch of allBranches) {
+        if (branch.branchCode !== currentUser.branchCode) {
           radioHtml += `<label style="display:block; margin-bottom: 8px;">
-            <input type="radio" name="pickupBranchRadio" value="${branch}">
-            Cabang ${branch}
+            <input type="radio" name="pickupBranchRadio" value="${branch.branchCode}">
+            Cabang ${branch.branchCode}
           </label>`;
         }
       }
