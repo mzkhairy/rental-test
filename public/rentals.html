@@ -418,7 +418,7 @@
     let customers = [];
     let allCrossVehicles = [];
     let currentUser = null;
-    let ports = { 'JKT': 4001, 'BGR': 4002, 'DPK': 4003, 'TGR': 4004, 'BKS': 4005 };
+    let allBranches = [];
 
     document.addEventListener('DOMContentLoaded', async () => {
       currentUser = await checkAuth();
@@ -479,6 +479,7 @@
       try {
         currentData = await apiFetch('/api/rentals');
         incomingTransfers = await apiFetch('/api/transfers');
+        allBranches = await apiFetch('/api/branches');
         renderTable();
         renderLogisticsTables();
       } catch (err) {
@@ -900,18 +901,18 @@
       let fetchedVehicles = [];
       const fetchPromises = [];
 
-      for (const [branch, port] of Object.entries(ports)) {
-        if (branch !== currentUser.branchCode) {
-          const p = fetch(`http://127.0.0.1:${port}/api/vehicles/available?startDate=${start.toISOString()}&endDate=${end.toISOString()}`)
+      for (const branch of allBranches) {
+        if (branch.branchCode !== currentUser.branchCode) {
+          const p = fetch(`http://${branch.host}:${branch.apiPort}/api/vehicles/available?startDate=${start.toISOString()}&endDate=${end.toISOString()}`)
             .then(r => r.json())
             .then(data => {
               if (data.vehicles) {
                 data.vehicles.forEach(v => {
-                  v.targetBranchCode = branch;
+                  v.targetBranchCode = branch.branchCode;
                   fetchedVehicles.push(v);
                 });
               }
-            }).catch(err => console.error('Gagal fetch cabang', branch));
+            }).catch(err => console.error('Gagal fetch cabang', branch.branchCode));
           fetchPromises.push(p);
         }
       }
@@ -938,8 +939,8 @@
       }
 
       const grouped = {};
-      for (const [branch, port] of Object.entries(ports)) {
-        if (branch !== currentUser.branchCode) grouped[branch] = [];
+      for (const branch of allBranches) {
+        if (branch.branchCode !== currentUser.branchCode) grouped[branch.branchCode] = [];
       }
 
       filtered.forEach(v => {

@@ -104,7 +104,7 @@ router.put('/:id', requireAuth, async (req, res) => {
       return res.status(400).json({ message: 'Tanggal mulai dan selesai wajib diisi' });
     }
 
-    const isCrossBranch = targetBranchCode && targetBranchCode !== process.env.BRANCH_CODE;
+    const isCrossBranch = Boolean(targetBranchCode && targetBranchCode !== process.env.BRANCH_CODE);
     
     if (rental.vehicleId.toString() !== vehicleId) {
       // Free old vehicle if it was local

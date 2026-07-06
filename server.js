@@ -44,6 +44,7 @@ const vehicleRoutes = require('./routes/vehicles');
 const transferRoutes = require('./routes/transfers');
 const rentalRoutes = require('./routes/rentals');
 const notificationRoutes = require('./routes/notifications');
+const branchRoutes = require('./routes/branches');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/employees', employeeRoutes);
@@ -52,6 +53,7 @@ app.use('/api/vehicles', vehicleRoutes);
 app.use('/api/transfers', transferRoutes);
 app.use('/api/rentals', rentalRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/branches', branchRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
