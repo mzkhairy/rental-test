@@ -6,6 +6,7 @@ const Vehicle = require('../models/Vehicle');
 const Branch = require('../models/Branch');
 const Notification = require('../models/Notification');
 const Rental = require('../models/Rental');
+const Customer = require('../models/Customer');
 const requireAuth = require('../middleware/requireAuth');
 
 // Ambil riwayat transfer (sebagai asal atau tujuan)
@@ -14,7 +15,8 @@ router.get('/', requireAuth, async (req, res) => {
     const transfers = await Transfer.find({
       $or: [
         { fromBranch: process.env.BRANCH_CODE },
-        { toBranch: process.env.BRANCH_CODE }
+        { toBranch: process.env.BRANCH_CODE },
+        { rentalBranch: process.env.BRANCH_CODE }
       ]
     }).populate('vehicleId');
     res.json(transfers);
@@ -76,9 +78,25 @@ router.post('/sync-status', async (req, res) => {
   try {
     const { transferCode, status, vehicleName, branchName } = req.body;
     const transfer = await Transfer.findOneAndUpdate({ transferCode }, { status }, { new: true });
-
-    if (status === 'Rejected' && transfer) {
-       await Rental.findOneAndUpdate({ transferId: transfer._id }, { status: 'Cancelled' });
+    if (transfer) {
+      if (status === 'Rejected') {
+         await Rental.findOneAndUpdate({ transferId: transfer._id }, { status: 'Cancelled' });
+         if (transfer.fromBranch === process.env.BRANCH_CODE) {
+           await Vehicle.findByIdAndUpdate(transfer.vehicleId, { status: 'Available' });
+         }
+      } else if (status === 'Arrived') {
+         if (transfer.rentalBranch === process.env.BRANCH_CODE) {
+           await Rental.findOneAndUpdate({ transferId: transfer._id }, { status: 'Active' });
+         }
+      } else if (status === 'Completed') {
+         if (transfer.rentalBranch === process.env.BRANCH_CODE) {
+           const r = await Rental.findOneAndUpdate({ transferId: transfer._id }, { status: 'Completed', actualReturnDate: new Date() });
+           if (r) await Customer.findByIdAndUpdate(r.customerId, { isRenting: false });
+         }
+         if (transfer.fromBranch === process.env.BRANCH_CODE) {
+           await Vehicle.findByIdAndUpdate(transfer.vehicleId, { status: 'Available' });
+         }
+      }
     }
 
     // Create Notification
@@ -88,15 +106,23 @@ router.post('/sync-status', async (req, res) => {
 
     if (status === 'Approved') {
       title = 'Request Disetujui';
-      message = `Cabang ${branchName || 'lain'} menyetujui request kendaraan Anda.`;
+      message = `Cabang ${branchName || 'lain'} menyetujui request kendaraan.`;
       link = '/rentals.html';
     } else if (status === 'Rejected') {
       title = 'Request Ditolak';
-      message = `Cabang ${branchName || 'lain'} menolak request kendaraan Anda.`;
+      message = `Cabang ${branchName || 'lain'} menolak request kendaraan.`;
       link = '/rentals.html';
     } else if (status === 'Arrived') {
-      title = 'Mobil Tiba';
-      message = `Mobil ${vehicleName || 'yang dikirim'} telah tiba di Cabang ${branchName || 'penerima'}.`;
+      title = 'Mobil Siap Digunakan';
+      message = `Mobil telah disiapkan/tiba di Cabang ${branchName || 'penerima'}.`;
+      link = '/rentals.html';
+    } else if (status === 'Requested') {
+      title = 'Request Masuk / Diproses';
+      message = `Cabang ${branchName || 'lain'} telah memproses pembayaran untuk transaksi.`;
+      link = '/rentals.html?highlight=ongoing';
+    } else if (status === 'Completed') {
+      title = 'Penyewaan Selesai';
+      message = `Cabang ${branchName || 'lain'} telah menyelesaikan penyewaan mobil.`;
       link = '/rentals.html';
     }
 
@@ -120,25 +146,46 @@ router.post('/sync-status', async (req, res) => {
 // Menerima request masuk dari cabang lain
 router.post('/incoming-request', async (req, res) => {
   try {
-    const { fromBranch, vehicleId, requestedBy, notes } = req.body;
+    const { rentalBranch, ownerBranch, destinationBranch, vehicleId, requestedBy, notes, status, transferCode } = req.body;
+    
+    let v = await Vehicle.findById(vehicleId);
+    if (!v) v = await Vehicle.findOne({ vehicleCode: vehicleId }); 
+
+    const code = transferCode || 'TRF-' + Date.now();
 
     const transfer = new Transfer({
-      transferCode: `TRF-${Date.now()}`,
-      fromBranch: process.env.BRANCH_CODE, // kita sebagai pemilik mobil (asal)
-      toBranch: fromBranch, // peminta adalah tujuan
-      vehicleId,
+      transferCode: code,
+      rentalBranch,
+      fromBranch: ownerBranch || process.env.BRANCH_CODE, // ownerBranch
+      toBranch: destinationBranch, // destinationBranch
+      vehicleId: v ? v._id : vehicleId,
       requestedBy,
       notes,
-      status: 'Requested'
+      status: status || 'Requested'
     });
 
     await transfer.save();
+    
+    if (v && ownerBranch === process.env.BRANCH_CODE) {
+      v.status = 'Booked';
+      await v.save();
+    }
 
-    const v = await Vehicle.findById(vehicleId);
+    let title = 'Request Kendaraan';
+    let message = `Cabang ${rentalBranch} telah membayar sewa untuk kendaraan ${v ? v.brand + ' ' + v.model : 'Anda'}.`;
+
+    if (ownerBranch === process.env.BRANCH_CODE && destinationBranch === process.env.BRANCH_CODE) {
+      message += ` (Digunakan/diambil di cabang Anda)`;
+    } else if (ownerBranch === process.env.BRANCH_CODE) {
+      message += ` (Kirim ke Cabang ${destinationBranch})`;
+    } else if (destinationBranch === process.env.BRANCH_CODE) {
+      message = `Bersiap menerima kendaraan ${v ? v.brand + ' ' + v.model : ''} dari Cabang ${ownerBranch} untuk transaksi Cabang ${rentalBranch}.`;
+    }
+
     await new Notification({
       branchCode: process.env.BRANCH_CODE,
-      title: 'Request Masuk',
-      message: `Cabang ${fromBranch} meminta kendaraan ${v ? v.brand + ' ' + v.model : 'Anda'}.`,
+      title,
+      message,
       link: '/rentals.html?highlight=ongoing'
     }).save();
 
@@ -170,24 +217,33 @@ router.post('/:id/approve', requireAuth, async (req, res) => {
       return res.status(400).json({ message: 'Request tidak valid' });
     }
 
-    transfer.status = 'Approved';
+    const isSameBranch = transfer.toBranch === process.env.BRANCH_CODE;
+    transfer.status = isSameBranch ? 'Arrived' : 'Approved';
     transfer.approvedBy = req.session.userId;
+    if (isSameBranch) transfer.arrivalDate = new Date();
     await transfer.save();
 
     const vehicle = await Vehicle.findById(transfer.vehicleId);
     if (vehicle) {
-      vehicle.status = 'Transfer';
+      vehicle.status = isSameBranch ? 'Rented by Request' : 'Transfer';
       await vehicle.save();
     }
 
-    // Ping peminta untuk sync status
-    const reqBranch = await Branch.findOne({ branchCode: transfer.toBranch });
-    if (reqBranch) {
-      axios.post(`http://${reqBranch.host}:${reqBranch.apiPort}/api/transfers/sync-status`, {
-        transferCode: transfer.transferCode,
-        status: 'Approved',
-        branchName: process.env.BRANCH_CODE
-      }).catch(e => console.error(e));
+    // Ping sync-status to rentalBranch and destinationBranch
+    const branchesToNotify = new Set([transfer.rentalBranch, transfer.toBranch]);
+    branchesToNotify.delete(process.env.BRANCH_CODE); // don't notify self
+
+    for (const bCode of branchesToNotify) {
+      if (bCode) {
+        const b = await Branch.findOne({ branchCode: bCode });
+        if (b) {
+          axios.post(`http://${b.host}:${b.apiPort}/api/transfers/sync-status`, {
+            transferCode: transfer.transferCode,
+            status: transfer.status,
+            branchName: process.env.BRANCH_CODE
+          }).catch(e => console.error("Gagal sync status approve ke", bCode, e.message));
+        }
+      }
     }
 
     res.json(transfer);
@@ -217,7 +273,7 @@ router.post('/:id/reject', requireAuth, async (req, res) => {
   }
 });
 
-// Konfirmasi mobil tiba di cabang tujuan (Dipanggil dari frontend cabang peminta)
+// Konfirmasi mobil tiba di cabang tujuan (Dipanggil dari frontend cabang tujuan)
 router.post('/:id/arrive', requireAuth, async (req, res) => {
   try {
     const transfer = await Transfer.findById(req.params.id);
@@ -229,36 +285,60 @@ router.post('/:id/arrive', requireAuth, async (req, res) => {
     transfer.arrivalDate = new Date();
     await transfer.save();
 
-    let vehicle = await Vehicle.findById(transfer.vehicleId);
-    if (!vehicle) {
-      try {
-        const ownerBranch = await Branch.findOne({ branchCode: transfer.fromBranch });
-        const vRes = await axios.get(`http://${ownerBranch.host}:${ownerBranch.apiPort}/api/vehicles/${transfer.vehicleId}`);
-        if (vRes.data) {
-          const vData = { ...vRes.data };
-          delete vData._id;
-          vehicle = await Vehicle.findByIdAndUpdate(transfer.vehicleId, vData, { upsert: true, new: true, setDefaultsOnInsert: true });
+    // Ping sync-status to rentalBranch and ownerBranch
+    const branchesToNotify = new Set([transfer.rentalBranch, transfer.fromBranch]);
+    branchesToNotify.delete(process.env.BRANCH_CODE); 
+
+    for (const bCode of branchesToNotify) {
+      if (bCode) {
+        const b = await Branch.findOne({ branchCode: bCode });
+        if (b) {
+          axios.post(`http://${b.host}:${b.apiPort}/api/transfers/sync-status`, {
+            transferCode: transfer.transferCode,
+            status: 'Arrived',
+            branchName: process.env.BRANCH_CODE
+          }).catch(e => console.error("Gagal sync status arrive ke", bCode, e.message));
         }
-      } catch (e) {
-        console.error('Gagal fetch data kendaraan saat tiba:', e.message);
       }
     }
 
-    if (vehicle) {
-      vehicle.status = 'Available';
-      vehicle.currentBranch = process.env.BRANCH_CODE;
-      await vehicle.save();
+    res.json(transfer);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+// Konfirmasi penyewaan selesai dan mobil dikembalikan (Dipanggil dari frontend cabang tujuan)
+router.post('/:id/complete', requireAuth, async (req, res) => {
+  try {
+    const transfer = await Transfer.findById(req.params.id);
+    if (!transfer || transfer.status !== 'Arrived') {
+      return res.status(400).json({ message: 'Status mobil belum tiba atau sudah selesai' });
     }
 
-    // Ping pemilik asli (fromBranch)
-    const ownerBranch = await Branch.findOne({ branchCode: transfer.fromBranch });
-    if (ownerBranch) {
-      axios.post(`http://${ownerBranch.host}:${ownerBranch.apiPort}/api/transfers/sync-status`, {
-        transferCode: transfer.transferCode,
-        status: 'Arrived',
-        branchName: process.env.BRANCH_CODE,
-        vehicleName: vehicle ? `${vehicle.brand} ${vehicle.model}` : 'Anda'
-      }).catch(e => console.error(e));
+    transfer.status = 'Completed';
+    await transfer.save();
+
+    // Jika cabang tujuan (kita) juga adalah pemilik asli mobil, langsung kembalikan ke Available
+    if (transfer.fromBranch === process.env.BRANCH_CODE) {
+      await Vehicle.findByIdAndUpdate(transfer.vehicleId, { status: 'Available' });
+    }
+
+    // Ping sync-status to rentalBranch and ownerBranch
+    const branchesToNotify = new Set([transfer.rentalBranch, transfer.fromBranch]);
+    branchesToNotify.delete(process.env.BRANCH_CODE); 
+
+    for (const bCode of branchesToNotify) {
+      if (bCode) {
+        const b = await Branch.findOne({ branchCode: bCode });
+        if (b) {
+          axios.post(`http://${b.host}:${b.apiPort}/api/transfers/sync-status`, {
+            transferCode: transfer.transferCode,
+            status: 'Completed',
+            branchName: process.env.BRANCH_CODE
+          }).catch(e => console.error("Gagal sync status complete ke", bCode, e.message));
+        }
+      }
     }
 
     res.json(transfer);

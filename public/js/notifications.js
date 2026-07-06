@@ -43,8 +43,18 @@ const fetchNotifications = async () => {
       }
     } else {
       badge.style.display = 'none';
-      notifBody.innerHTML = '<div class="notif-item"><div class="notif-item-desc">Tidak ada notifikasi baru.</div></div>';
+      notifBody.innerHTML = '<div class="notif-item"><div class="notif-item-desc" style="text-align:center;">Tidak ada notifikasi baru.</div></div>';
     }
+
+    // Selalu tambahkan tombol "Lihat Semua" di bagian paling bawah
+    const viewAll = document.createElement('div');
+    viewAll.className = 'notif-item';
+    viewAll.style.textAlign = 'center';
+    viewAll.style.borderTop = '1px solid var(--border-color)';
+    viewAll.style.background = 'var(--bg-main)';
+    viewAll.innerHTML = `<a href="/notifications.html" style="color: var(--primary-color); text-decoration: none; font-weight: 500; display: block; width: 100%;">Lihat Semua Notifikasi</a>`;
+    notifBody.appendChild(viewAll);
+
   } catch (err) {
     console.error('Failed to fetch notifications', err);
   }

@@ -21,6 +21,7 @@
       <a href="/vehicles.html" class="nav-link">Kendaraan</a>
       <a href="/customers.html" class="nav-link active">Pelanggan</a>
       <a href="/employees.html" class="nav-link">Karyawan</a>
+      <a href="/notifications.html" class="nav-link">Notifikasi</a>
     </nav>
   </aside>
 
@@ -187,8 +188,10 @@
           <td>
             <div style="display: flex; flex-wrap: nowrap; gap: 5px;">
               <button class="action-btn" onclick="showDetail('${c._id}')">Detail</button>
+              ${!c.isRenting ? `
               <button class="action-btn" onclick="openModal('${c._id}')">Edit</button>
               <button class="action-btn reject" onclick="deleteData('${c._id}')">Hapus</button>
+              ` : ''}
             </div>
           </td>
         `;

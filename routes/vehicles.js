@@ -7,7 +7,9 @@ const requireAuth = require('../middleware/requireAuth');
 router.get('/', requireAuth, async (req, res) => {
   try {
     // Ambil mobil yang sedang berada di cabang ini
-    const vehicles = await Vehicle.find({ currentBranch: process.env.BRANCH_CODE });
+    let query = { currentBranch: process.env.BRANCH_CODE };
+    if (req.query.status) query.status = req.query.status;
+    const vehicles = await Vehicle.find(query);
     res.json(vehicles);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -63,6 +65,11 @@ router.post('/', requireAuth, async (req, res) => {
 // PUT /api/vehicles/:id
 router.put('/:id', requireAuth, async (req, res) => {
   try {
+    const v = await Vehicle.findById(req.params.id);
+    if (!v) return res.status(404).json({ message: 'Vehicle not found' });
+    if (v.status !== 'Available' && v.status !== 'Maintenance') {
+      return res.status(400).json({ message: 'Kendaraan hanya dapat diedit saat statusnya Available atau Maintenance.' });
+    }
     const vehicle = await Vehicle.findByIdAndUpdate(req.params.id, req.body, { new: true });
     res.json(vehicle);
   } catch (err) {
@@ -73,6 +80,11 @@ router.put('/:id', requireAuth, async (req, res) => {
 // DELETE /api/vehicles/:id
 router.delete('/:id', requireAuth, async (req, res) => {
   try {
+    const v = await Vehicle.findById(req.params.id);
+    if (!v) return res.status(404).json({ message: 'Vehicle not found' });
+    if (v.status !== 'Available' && v.status !== 'Maintenance') {
+      return res.status(400).json({ message: 'Kendaraan hanya dapat dihapus saat statusnya Available atau Maintenance.' });
+    }
     await Vehicle.findByIdAndDelete(req.params.id);
     res.json({ message: 'Vehicle deleted' });
   } catch (err) {

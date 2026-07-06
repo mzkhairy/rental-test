@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Notifikasi - RentSync</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .notif-page-item {
+      padding: 1rem;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      background: var(--bg-card);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: box-shadow 0.2s ease;
+    }
+    .notif-page-item:hover {
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }
+    .notif-page-item.unread {
+      background: var(--bg-main);
+      border-left: 4px solid var(--primary-color);
+    }
+    .notif-title { font-weight: 600; font-size: 1.05rem; margin-bottom: 0.25rem; }
+    .notif-message { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 0.5rem; }
+    .notif-meta { font-size: 0.8rem; color: #888; }
+    .notif-actions button {
+      margin-left: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="sidebar-logo">RentSync</div>
+    <nav>
+      <a href="/dashboard.html" class="nav-link">Dashboard</a>
+      <a href="/rentals.html" class="nav-link">Penyewaan</a>
+      <a href="/vehicles.html" class="nav-link">Kendaraan</a>
+      <a href="/customers.html" class="nav-link">Pelanggan</a>
+      <a href="/employees.html" class="nav-link">Karyawan</a>
+      <a href="/notifications.html" class="nav-link active">Notifikasi</a>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <header class="topbar">
+      <div class="topbar-left" id="topbar-branch">Loading...</div>
+      <div class="topbar-right">
+        <div class="notification-bell" id="notif-bell">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+          <span class="badge" id="notif-badge">0</span>
+          <div class="notif-dropdown" id="notif-dropdown">
+            <div class="notif-header">Notifikasi Rental Lintas Cabang</div>
+            <div class="notif-body" id="notif-body"></div>
+          </div>
+        </div>
+        <div class="user-profile" onclick="logout()" title="Logout">
+          <div class="avatar" id="topbar-avatar">U</div>
+          <span id="topbar-username">User</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="page-content">
+      <div class="page-header" style="justify-content: space-between; align-items: center; display: flex;">
+        <div>
+          <h1 class="page-title">Riwayat Notifikasi</h1>
+          <p style="color:var(--text-muted); margin-top: 0.5rem;">Seluruh log aktivitas lintas cabang dan pembaruan sistem.</p>
+        </div>
+        <button class="btn-primary" style="background:var(--bg-main); color:var(--text-main); border:1px solid var(--border-color); width: auto;" onclick="loadNotifications()">Refresh</button>
+      </div>
+
+      <div id="notifications-list" style="margin-top: 2rem;">
+        <div style="text-align: center; color: var(--text-muted); padding: 2rem;">Memuat notifikasi...</div>
+      </div>
+    </div>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/notifications.js"></script>
+  <script>
+    async function loadNotifications() {
+      const container = document.getElementById('notifications-list');
+      try {
+        const data = await apiFetch('/api/notifications'); 
+        container.innerHTML = '';
+        
+        if (data.length === 0) {
+          container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 2rem;">Belum ada riwayat notifikasi.</div>';
+          return;
+        }
+
+        data.forEach(notif => {
+          const item = document.createElement('div');
+          item.className = `notif-page-item ${!notif.isRead ? 'unread' : ''}`;
+          const dateStr = new Date(notif.createdAt).toLocaleString('id-ID');
+          
+          let actionsHtml = '';
+          if (!notif.isRead) {
+            actionsHtml += `<button class="action-btn bg-success" onclick="markAsRead('${notif._id}')">Tandai Dibaca</button>`;
+          }
+          if (notif.link) {
+            actionsHtml += `<button class="action-btn bg-primary" onclick="window.location.href='${notif.link}'">Lihat Detail</button>`;
+          }
+
+          item.innerHTML = `
+            <div>
+              <div class="notif-title">${notif.title}</div>
+              <div class="notif-message">${notif.message}</div>
+              <div class="notif-meta">${dateStr}</div>
+            </div>
+            <div class="notif-actions">
+              ${actionsHtml}
+            </div>
+          `;
+          container.appendChild(item);
+        });
+      } catch (err) {
+        container.innerHTML = `<div style="color: red; text-align:center;">Gagal memuat notifikasi: ${err.message}</div>`;
+      }
+    }
+
+    async function markAsRead(id) {
+      try {
+        await apiFetch(`/api/notifications/${id}/read`, { method: 'PUT' });
+        loadNotifications();
+        if (typeof fetchNotifications === 'function') fetchNotifications();
+      } catch (err) {
+        alert('Gagal update status: ' + err.message);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadNotifications();
+    });
+  </script>
+</body>
+</html>

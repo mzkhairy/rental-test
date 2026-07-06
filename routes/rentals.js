@@ -10,7 +10,7 @@ const requireAuth = require('../middleware/requireAuth');
 
 router.get('/', requireAuth, async (req, res) => {
   try {
-    const rentals = await Rental.find({ pickupBranch: process.env.BRANCH_CODE })
+    const rentals = await Rental.find({ rentalBranch: process.env.BRANCH_CODE })
       .populate('customerId vehicleId handledBy transferId');
     res.json(rentals);
   } catch (err) {
@@ -67,42 +67,21 @@ router.post('/', requireAuth, async (req, res) => {
       startDate: start,
       expectedReturnDate: end,
       handledBy: req.session.userId,
-      pickupBranch: process.env.BRANCH_CODE,
-      returnBranch: process.env.BRANCH_CODE,
+      pickupBranch: req.body.pickupBranch || process.env.BRANCH_CODE,
+      returnBranch: req.body.pickupBranch || process.env.BRANCH_CODE,
+      ownerBranch: targetBranchCode || process.env.BRANCH_CODE,
+      rentalBranch: process.env.BRANCH_CODE,
       isCrossBranch,
-      status: isCrossBranch ? 'Waiting Transfer' : 'Pending Payment'
+      status: 'Pending Payment'
     });
 
     await rental.save();
 
-    if (isCrossBranch) {
-      const targetBranch = await Branch.findOne({ branchCode: targetBranchCode });
-      if (targetBranch) {
-        const targetUrl = `http://${targetBranch.host}:${targetBranch.apiPort}/api/transfers/incoming-request`;
-        try {
-          const response = await axios.post(targetUrl, {
-            fromBranch: process.env.BRANCH_CODE, 
-            vehicleId,
-            requestedBy: req.session.userId,
-            notes: `Auto-request from Booking ${rental.rentalCode}`
-          });
-          
-          const localTransfer = new Transfer({
-            transferCode: response.data.transferCode,
-            fromBranch: targetBranchCode, 
-            toBranch: process.env.BRANCH_CODE, 
-            vehicleId,
-            requestedBy: req.session.userId,
-            notes: `Auto-request from Booking ${rental.rentalCode}`,
-            status: 'Requested'
-          });
-          await localTransfer.save();
-
-          rental.transferId = localTransfer._id;
-          await rental.save();
-        } catch (err) {
-          console.error("Gagal request transfer otomatis", err.message);
-        }
+    if (!isCrossBranch) {
+      const vLocal = await Vehicle.findById(vehicleId);
+      if (vLocal) {
+        vLocal.status = 'Booked';
+        await vLocal.save();
       }
     }
 
@@ -116,13 +95,70 @@ router.put('/:id/confirm-payment', requireAuth, async (req, res) => {
   try {
     const rental = await Rental.findById(req.params.id);
     if (!rental || rental.status !== 'Pending Payment') return res.status(400).json({ message: 'Status tidak valid' });
-    rental.status = 'Active';
-    await rental.save();
-    
-    const vehicle = await Vehicle.findById(rental.vehicleId);
-    if (vehicle) {
-      vehicle.status = 'Rented';
-      await vehicle.save();
+
+    if (rental.isCrossBranch) {
+      rental.status = 'Waiting Transfer';
+      await rental.save();
+
+      const ownerBranchCode = rental.ownerBranch;
+      const destinationBranchCode = rental.pickupBranch;
+      const ownerBranch = await Branch.findOne({ branchCode: ownerBranchCode });
+
+      if (ownerBranch) {
+        try {
+          const targetUrl = `http://${ownerBranch.host}:${ownerBranch.apiPort}/api/transfers/incoming-request`;
+          const response = await axios.post(targetUrl, {
+            rentalBranch: process.env.BRANCH_CODE,
+            ownerBranch: ownerBranchCode,
+            destinationBranch: destinationBranchCode,
+            vehicleId: rental.vehicleId,
+            requestedBy: rental.handledBy,
+            notes: `Paid Booking ${rental.rentalCode}`,
+            status: 'Requested'
+          });
+
+          const localTransfer = new Transfer({
+            transferCode: response.data.transferCode,
+            rentalBranch: process.env.BRANCH_CODE,
+            fromBranch: ownerBranchCode,
+            toBranch: destinationBranchCode,
+            vehicleId: rental.vehicleId,
+            requestedBy: rental.handledBy,
+            notes: `Paid Booking ${rental.rentalCode}`,
+            status: 'Requested'
+          });
+          await localTransfer.save();
+          rental.transferId = localTransfer._id;
+          await rental.save();
+
+          if (destinationBranchCode !== ownerBranchCode && destinationBranchCode !== process.env.BRANCH_CODE) {
+            const destBranch = await Branch.findOne({ branchCode: destinationBranchCode });
+            if (destBranch) {
+              axios.post(`http://${destBranch.host}:${destBranch.apiPort}/api/transfers/incoming-request`, {
+                transferCode: response.data.transferCode,
+                rentalBranch: process.env.BRANCH_CODE,
+                ownerBranch: ownerBranchCode,
+                destinationBranch: destinationBranchCode,
+                vehicleId: rental.vehicleId,
+                requestedBy: rental.handledBy,
+                notes: `Expect incoming car from ${ownerBranchCode}`,
+                status: 'Requested'
+              }).catch(e => console.error("Gagal info dest branch", e.message));
+            }
+          }
+        } catch (err) {
+          console.error("Gagal integrasi transfer P2P", err.message);
+        }
+      }
+    } else {
+      rental.status = 'Active';
+      await rental.save();
+
+      const vehicle = await Vehicle.findById(rental.vehicleId);
+      if (vehicle) {
+        vehicle.status = 'Rented';
+        await vehicle.save();
+      }
     }
 
     await Customer.findByIdAndUpdate(rental.customerId, { isRenting: true });
@@ -161,12 +197,16 @@ router.post('/:id/arrive', requireAuth, async (req, res) => {
           }).catch(e => console.error(e));
         }
       } else {
-         return res.status(400).json({ message: 'Transfer belum di-approve oleh cabang pemilik' });
+        return res.status(400).json({ message: 'Transfer belum di-approve oleh cabang pemilik' });
       }
     }
 
-    rental.status = 'Pending Payment';
+    rental.status = 'Active';
     await rental.save();
+
+    // Update customer isRenting status if needed
+    await Customer.findByIdAndUpdate(rental.customerId, { isRenting: true });
+
     res.json(rental);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -179,24 +219,24 @@ router.put('/:id/cancel', requireAuth, async (req, res) => {
     if (!rental || (rental.status !== 'Pending Payment' && rental.status !== 'Waiting Transfer')) {
       return res.status(400).json({ message: 'Hanya bisa membatalkan transaksi pending atau waiting transfer' });
     }
-    
+
     rental.status = 'Cancelled';
     await rental.save();
 
     if (rental.transferId) {
       const transfer = await Transfer.findById(rental.transferId);
       if (transfer && transfer.status !== 'Arrived' && transfer.status !== 'Rejected') {
-         transfer.status = 'Rejected';
-         await transfer.save();
-         
-         const ownerBranch = await Branch.findOne({ branchCode: transfer.fromBranch });
-         if (ownerBranch) {
-           axios.post(`http://${ownerBranch.host}:${ownerBranch.apiPort}/api/transfers/sync-status`, {
-             transferCode: transfer.transferCode,
-             status: 'Rejected',
-             branchName: process.env.BRANCH_CODE
-           }).catch(e => console.error(e));
-         }
+        transfer.status = 'Rejected';
+        await transfer.save();
+
+        const ownerBranch = await Branch.findOne({ branchCode: transfer.fromBranch });
+        if (ownerBranch) {
+          axios.post(`http://${ownerBranch.host}:${ownerBranch.apiPort}/api/transfers/sync-status`, {
+            transferCode: transfer.transferCode,
+            status: 'Rejected',
+            branchName: process.env.BRANCH_CODE
+          }).catch(e => console.error(e));
+        }
       }
     }
 

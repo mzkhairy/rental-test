@@ -27,6 +27,11 @@ router.post('/', requireAuth, async (req, res) => {
 
 router.put('/:id', requireAuth, async (req, res) => {
   try {
+    const c = await Customer.findById(req.params.id);
+    if (!c) return res.status(404).json({ message: 'Customer not found' });
+    if (c.isRenting) {
+      return res.status(400).json({ message: 'Data pelanggan tidak dapat diedit saat sedang meminjam kendaraan.' });
+    }
     const customer = await Customer.findByIdAndUpdate(req.params.id, req.body, { new: true });
     res.json(customer);
   } catch (err) {
@@ -36,6 +41,11 @@ router.put('/:id', requireAuth, async (req, res) => {
 
 router.delete('/:id', requireAuth, async (req, res) => {
   try {
+    const c = await Customer.findById(req.params.id);
+    if (!c) return res.status(404).json({ message: 'Customer not found' });
+    if (c.isRenting) {
+      return res.status(400).json({ message: 'Pelanggan tidak dapat dihapus saat sedang meminjam kendaraan.' });
+    }
     await Customer.findByIdAndDelete(req.params.id);
     res.json({ message: 'Customer deleted' });
   } catch (err) {

@@ -6,16 +6,63 @@
   <title>Penyewaan - RentSync</title>
   <link rel="stylesheet" href="/css/style.css">
   <style>
-    .search-filter-box { display: flex; gap: 1rem; margin-bottom: 1.5rem; }
-    .search-filter-box input, .search-filter-box select { flex: 1; }
-    .detail-item { margin-bottom: 0.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color); }
-    .detail-label { font-weight: 600; color: var(--text-muted); font-size: 0.85rem; display: block; }
-    .detail-value { color: var(--text-main); font-size: 0.95rem; word-break: break-all; }
-    .tabs { display: flex; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); }
-    .tab { padding: 0.75rem 1.5rem; cursor: pointer; color: var(--text-muted); border-bottom: 2px solid transparent; font-weight: 500;}
-    .tab.active { color: var(--primary-color); border-bottom-color: var(--primary-color); }
-    .tab-content { display: none; }
-    .tab-content.active { display: block; }
+    .search-filter-box {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .search-filter-box input,
+    .search-filter-box select {
+      flex: 1;
+    }
+
+    .detail-item {
+      margin-bottom: 0.5rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .detail-label {
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      display: block;
+    }
+
+    .detail-value {
+      color: var(--text-main);
+      font-size: 0.95rem;
+      word-break: break-all;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .tab {
+      padding: 0.75rem 1.5rem;
+      cursor: pointer;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      font-weight: 500;
+    }
+
+    .tab.active {
+      color: var(--primary-color);
+      border-bottom-color: var(--primary-color);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
   </style>
 </head>
 
@@ -28,6 +75,7 @@
       <a href="/vehicles.html" class="nav-link">Kendaraan</a>
       <a href="/customers.html" class="nav-link">Pelanggan</a>
       <a href="/employees.html" class="nav-link">Karyawan</a>
+      <a href="/notifications.html" class="nav-link">Notifikasi</a>
     </nav>
   </aside>
 
@@ -58,14 +106,16 @@
       <div class="page-header">
         <h1 class="page-title">Penyewaan & Logistik Kendaraan</h1>
         <div id="header-actions">
-          <button class="btn-primary" style="width: auto;" onclick="openRentalModal('local')">Buat Transaksi Lokal</button>
+          <button class="btn-primary" style="width: auto;" onclick="openRentalModal('local')">Buat Transaksi
+            Lokal</button>
         </div>
       </div>
 
       <div class="tabs">
         <div class="tab active" onclick="switchTab('local', this)">Data Penyewaan</div>
         <div class="tab" onclick="switchTab('cross', this)">Penyewaan Lintas Cabang</div>
-        <div class="tab" onclick="switchTab('logistics', this)">Incoming Requests <span id="logistics-badge" class="badge" style="position:relative;top:-2px;left:5px;display:none;">0</span></div>
+        <div class="tab" onclick="switchTab('logistics', this)">Requests <span id="logistics-badge"
+            class="badge" style="position:relative;top:-2px;left:5px;display:none;">0</span></div>
       </div>
 
       <div id="tab-rentals" class="tab-content active">
@@ -73,26 +123,46 @@
         <h3 style="margin-bottom: 1rem;">Penyewaan Berlangsung</h3>
         <div class="search-filter-box">
           <div style="display: flex; gap: 12px; flex: 1;">
-            <input type="text" id="searchOngoing" class="form-control" placeholder="Cari kode rental atau nama pelanggan..." style="max-width: 400px; height: 44px;" oninput="renderTable()">
+            <input type="text" id="searchOngoing" class="form-control"
+              placeholder="Cari kode rental atau nama pelanggan..." style="max-width: 400px; height: 44px;"
+              oninput="renderTable()">
           </div>
         </div>
         <div class="table-container" style="margin-bottom: 2rem;">
           <table>
-            <thead><tr><th>Kode Rental</th><th>Customer</th><th>Kendaraan</th><th>Tanggal Pinjam</th><th>Lama (Hari)</th><th>Status</th><th>Aksi</th></tr></thead>
+            <thead>
+              <tr>
+                <th>Kode Rental</th>
+                <th>Customer</th>
+                <th>Kendaraan</th>
+                <th>Jenis</th>
+                <th>Asal Cabang</th>
+                <th>Tanggal Pinjam</th>
+                <th>Lama (Hari)</th>
+                <th>Status</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
             <tbody id="table-body-ongoing">
-               <tr><td colspan="7" style="text-align:center">Memuat...</td></tr>
+              <tr>
+                <td colspan="9" style="text-align:center">Memuat...</td>
+              </tr>
             </tbody>
           </table>
         </div>
 
         <!-- Row 2: Histori Penyewaan -->
         <h3 style="margin-bottom: 1rem; margin-top: 3rem;">Histori Penyewaan</h3>
-        <div class="search-filter-box" style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+        <div class="search-filter-box"
+          style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
           <div style="display: flex; gap: 12px; flex: 1; min-width: 300px; flex-wrap: wrap;">
-            <input type="text" id="searchHistory" class="form-control" placeholder="Cari histori..." style="width: 100%; max-width: 300px; height: 44px;" oninput="renderTable()">
-            <input type="date" id="filterStartDate" class="form-control" style="height: 44px; width: auto;" title="Tanggal Mulai" onchange="renderTable()">
+            <input type="text" id="searchHistory" class="form-control" placeholder="Cari histori..."
+              style="width: 100%; max-width: 300px; height: 44px;" oninput="renderTable()">
+            <input type="date" id="filterStartDate" class="form-control" style="height: 44px; width: auto;"
+              title="Tanggal Mulai" onchange="renderTable()">
             <span style="display:flex; align-items:center; color: var(--text-muted);">s/d</span>
-            <input type="date" id="filterEndDate" class="form-control" style="height: 44px; width: auto;" title="Tanggal Selesai" onchange="renderTable()">
+            <input type="date" id="filterEndDate" class="form-control" style="height: 44px; width: auto;"
+              title="Tanggal Selesai" onchange="renderTable()">
           </div>
           <div style="display: flex; gap: 12px;">
             <select id="filterStatus" class="form-control" style="height: 44px;" onchange="renderTable()">
@@ -104,9 +174,23 @@
         </div>
         <div class="table-container">
           <table>
-            <thead><tr><th>Kode Rental</th><th>Customer</th><th>Kendaraan</th><th>Jenis</th><th>Asal Cabang</th><th>Tanggal Pinjam</th><th>Lama (Hari)</th><th>Status</th><th>Aksi</th></tr></thead>
+            <thead>
+              <tr>
+                <th>Kode Rental</th>
+                <th>Customer</th>
+                <th>Kendaraan</th>
+                <th>Jenis</th>
+                <th>Asal Cabang</th>
+                <th>Tanggal Pinjam</th>
+                <th>Lama (Hari)</th>
+                <th>Status</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
             <tbody id="table-body-history">
-               <tr><td colspan="9" style="text-align:center">Memuat...</td></tr>
+              <tr>
+                <td colspan="9" style="text-align:center">Memuat...</td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -115,39 +199,87 @@
       <div id="tab-cross" class="tab-content">
         <h3 style="margin-bottom: 1rem;">Cari & Sewa Kendaraan Cabang Lain</h3>
         <!-- Grid 1: Form -->
-        <div style="display: flex; gap: 1rem; margin-bottom: 2rem; background: var(--bg-card); padding: 1.5rem; border-radius: 8px; border: 1px solid var(--border-color);">
+        <div
+          style="display: flex; gap: 1rem; margin-bottom: 2rem; background: var(--bg-card); padding: 1.5rem; border-radius: 8px; border: 1px solid var(--border-color);">
           <div style="flex:1;">
-            <label style="display:block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.9rem;">Customer <span style="color:red">*</span></label>
-            <select id="crossCustomer" class="form-control" required onchange="fetchCrossBranchVehicles()"><option value="">Memuat...</option></select>
+            <label style="display:block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.9rem;">Customer <span
+                style="color:red">*</span></label>
+            <select id="crossCustomer" class="form-control" required onchange="fetchCrossBranchVehicles()">
+              <option value="">Memuat...</option>
+            </select>
           </div>
           <div style="flex:1;">
-            <label style="display:block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.9rem;">Tanggal Mulai <span style="color:red">*</span></label>
+            <label style="display:block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.9rem;">Tanggal Mulai
+              <span style="color:red">*</span></label>
             <input type="date" id="crossStartDate" class="form-control" required onchange="fetchCrossBranchVehicles()">
           </div>
           <div style="flex:1;">
-            <label style="display:block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.9rem;">Total Hari <span style="color:red">*</span></label>
-            <input type="number" id="crossTotalDays" class="form-control" required min="1" value="1" onchange="fetchCrossBranchVehicles()">
+            <label style="display:block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.9rem;">Total Hari <span
+                style="color:red">*</span></label>
+            <input type="number" id="crossTotalDays" class="form-control" required min="1" value="1"
+              onchange="fetchCrossBranchVehicles()">
           </div>
         </div>
 
         <!-- Grid 2: Hasil Pencarian -->
         <div class="search-filter-box" style="margin-bottom: 1rem;">
-          <input type="text" id="searchCross" class="form-control" placeholder="Cari nama atau merk kendaraan di semua cabang..." style="max-width: 400px; height: 44px;" oninput="renderCrossBranchTables()">
+          <input type="text" id="searchCross" class="form-control"
+            placeholder="Cari nama atau merk kendaraan di semua cabang..." style="max-width: 400px; height: 44px;"
+            oninput="renderCrossBranchTables()">
         </div>
         <div id="crossBranchResults">
           <!-- Tables per branch will be injected here -->
-          <p style="color: var(--text-muted); padding: 2rem; text-align: center; border: 1px dashed var(--border-color); border-radius: 8px;">Pilih Customer, Tanggal, dan Total Hari untuk melihat kendaraan dari cabang lain.</p>
+          <p
+            style="color: var(--text-muted); padding: 2rem; text-align: center; border: 1px dashed var(--border-color); border-radius: 8px;">
+            Pilih Customer, Tanggal, dan Total Hari untuk melihat kendaraan dari cabang lain.</p>
         </div>
       </div>
 
       <div id="tab-logistics" class="tab-content">
-        <h3>Request Masuk (Dari Cabang Lain)</h3>
-        <p style="color:var(--text-muted); margin-bottom: 1rem; font-size: 0.9rem;">Cabang lain memiliki transaksi sewa dan membutuhkan mobil dari cabang kita.</p>
-        <div class="table-container" style="margin-bottom: 2rem;">
+        <!-- Grid: Ongoing Requests -->
+        <h3 style="margin-top: 1rem;">Sedang Berlangsung / Masuk (Ongoing Requests)</h3>
+        <p style="color:var(--text-muted); margin-bottom: 1rem; font-size: 0.9rem;">Daftar request masuk dari cabang lain atau kendaraan yang sedang disewa.</p>
+        <div class="table-container" style="margin-bottom: 3rem;">
           <table>
-            <thead><tr><th>Kode Transfer</th><th>Peminta</th><th>Kendaraan</th><th>Status</th><th>Aksi</th></tr></thead>
-            <tbody id="incoming-results">
-              <tr><td colspan="5" style="text-align:center">Memuat...</td></tr>
+            <thead>
+              <tr>
+                <th>Kode Transfer</th>
+                <th>Asal Mobil</th>
+                <th>Cabang Rental</th>
+                <th>Kendaraan</th>
+                <th>Status</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="ongoing-requests-tbody">
+              <tr><td colspan="6" style="text-align:center">Memuat...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Grid C: Request History -->
+        <h3 style="margin-top: 1rem;">Riwayat Requests (History)</h3>
+        <p style="color:var(--text-muted); margin-bottom: 1rem; font-size: 0.9rem;">Riwayat semua permintaan mobil antar-cabang.</p>
+        <div class="search-filter-box" style="margin-bottom: 1rem;">
+          <input type="text" id="searchHistoryRequests" class="form-control"
+            placeholder="Cari kode transfer atau nama cabang..." style="max-width: 400px; height: 44px;"
+            oninput="renderLogisticsTables()">
+        </div>
+        <div class="table-container" style="margin-bottom: 1rem;">
+          <table>
+            <thead>
+              <tr>
+                <th>Kode Transfer</th>
+                <th>Asal Mobil</th>
+                <th>Tujuan</th>
+                <th>Cabang Rental</th>
+                <th>Kendaraan</th>
+                <th>Status</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="history-requests-tbody">
+              <tr><td colspan="7" style="text-align:center">Memuat...</td></tr>
             </tbody>
           </table>
         </div>
@@ -173,7 +305,8 @@
         </div>
         <div class="form-group">
           <label for="totalDays">Total Hari</label>
-          <input type="number" id="totalDays" class="form-control" required min="1" value="1" onchange="fetchAvailableVehicles()">
+          <input type="number" id="totalDays" class="form-control" required min="1" value="1"
+            onchange="fetchAvailableVehicles()">
         </div>
         <div class="form-group">
           <label for="vehicleId">Pilih Kendaraan</label>
@@ -197,6 +330,25 @@
     </div>
   </div>
 
+  <!-- Pickup Modal for Cross Branch -->
+  <div id="crossPickupModal" class="modal">
+    <div class="modal-content" style="max-width: 400px;">
+      <div class="modal-header">
+        <h3>Lokasi Pengambilan</h3>
+        <button class="close-btn" onclick="closeCrossPickupModal()">&times;</button>
+      </div>
+      <form id="crossPickupForm">
+        <p style="margin-bottom: 1rem; color: var(--text-muted); font-size: 0.9rem;">
+          Tentukan di cabang mana mobil ini akan diambil dan digunakan oleh customer.
+        </p>
+        <div id="pickupBranchOptions" style="margin-bottom: 1.5rem;">
+          <!-- Radio buttons will be injected here -->
+        </div>
+        <button type="submit" class="btn-primary" style="width: 100%;">Konfirmasi & Buat Request</button>
+      </form>
+    </div>
+  </div>
+
   <script src="/js/api.js"></script>
   <script src="/js/notifications.js"></script>
   <script>
@@ -207,7 +359,7 @@
     let allCrossVehicles = [];
     let currentUser = null;
     let ports = { 'JKT': 4001, 'BGR': 4002, 'DPK': 4003, 'TGR': 4004, 'BKS': 4005 };
-    
+
     document.addEventListener('DOMContentLoaded', async () => {
       currentUser = await checkAuth();
       if (!currentUser) return;
@@ -215,37 +367,39 @@
 
       customers = await apiFetch('/api/customers');
       const cSelect = document.getElementById('crossCustomer');
+      const rSelect = document.getElementById('customerId');
       cSelect.innerHTML = '<option value="">Pilih Customer...</option>';
+      rSelect.innerHTML = '<option value="">Pilih Customer...</option>';
       customers.forEach(c => {
         cSelect.innerHTML += `<option value="${c._id}">${c.fullName}</option>`;
+        rSelect.innerHTML += `<option value="${c._id}">${c.fullName}</option>`;
       });
-      
+
       const today = new Date().toISOString().split('T')[0];
       document.getElementById('crossStartDate').min = today;
       document.getElementById('startDate').min = today;
-      
+
       const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.get('highlight') === 'ongoing') {
         switchTab('logistics');
       }
 
       loadData();
-      loadIncomingTransfers();
     });
 
     function switchTab(tabId, el) {
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-      
+
       if (el) {
         el.classList.add('active');
       } else {
         const tabs = document.querySelectorAll('.tab');
-        if(tabId === 'local') tabs[0].classList.add('active');
-        if(tabId === 'cross') tabs[1].classList.add('active');
-        if(tabId === 'logistics') tabs[2].classList.add('active');
+        if (tabId === 'local') tabs[0].classList.add('active');
+        if (tabId === 'cross') tabs[1].classList.add('active');
+        if (tabId === 'logistics') tabs[2].classList.add('active');
       }
-      
+
       const headerActions = document.getElementById('header-actions');
 
       if (tabId === 'local') {
@@ -264,10 +418,11 @@
     async function loadData() {
       try {
         currentData = await apiFetch('/api/rentals');
+        incomingTransfers = await apiFetch('/api/transfers');
         renderTable();
+        renderLogisticsTables();
       } catch (err) {
         console.error(err);
-        document.getElementById('table-body').innerHTML = `<tr><td colspan="7" style="text-align:center;color:red">Error memuat data</td></tr>`;
       }
     }
 
@@ -295,17 +450,17 @@
         const custName = r.customerId ? r.customerId.fullName.toLowerCase() : '';
         const matchSearch = r.rentalCode.toLowerCase().includes(searchHistory) || custName.includes(searchHistory);
         const matchStatus = statusFilter ? r.status === statusFilter : true;
-        
+
         let matchDate = true;
         if (startDateFilter || endDateFilter) {
           const start = new Date(r.startDate).getTime();
           const end = new Date(r.expectedReturnDate).getTime();
-          
+
           if (startDateFilter) {
-             if (end < new Date(startDateFilter).getTime()) matchDate = false;
+            if (end < new Date(startDateFilter).getTime()) matchDate = false;
           }
           if (endDateFilter) {
-             if (start >= new Date(endDateFilter).getTime() + 86400000) matchDate = false;
+            if (start >= new Date(endDateFilter).getTime() + 86400000) matchDate = false;
           }
         }
         return matchSearch && matchStatus && matchDate;
@@ -317,8 +472,7 @@
 
     function renderRows(tbody, data, emptyMessage, tableType) {
       if (data.length === 0) {
-        const colSpan = tableType === 'history' ? 9 : 7;
-        tbody.innerHTML = `<tr><td colspan="${colSpan}" style="text-align:center; color: var(--text-muted)">${emptyMessage}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color: var(--text-muted)">${emptyMessage}</td></tr>`;
         return;
       }
       tbody.innerHTML = '';
@@ -341,27 +495,29 @@
           actionBtn += `<button class="action-btn bg-success" onclick="confirmPayment('${r._id}')">Konfirmasi Payment</button>`;
           actionBtn += `<button class="action-btn reject" onclick="cancelRental('${r._id}')">Batal</button>`;
         } else if (r.status === 'Active') {
-          actionBtn += `<button class="action-btn bg-success" onclick="returnVehicle('${r._id}')">Selesaikan Sewa</button>`;
+          // Hanya tampilkan tombol selesaikan sewa jika diambil di cabang ini
+          if (!(r.isCrossBranch && r.returnBranch !== currentUser.branchCode)) {
+            actionBtn += `<button class="action-btn bg-success" onclick="returnVehicle('${r._id}')">Selesaikan Sewa</button>`;
+          }
         }
         actionBtn += `</div>`;
 
         const tr = document.createElement('tr');
         const d = new Date(r.startDate).toLocaleDateString('id-ID');
-        
+
         let colsHtml = `
           <td>${r.rentalCode}</td>
           <td>${r.customerId ? r.customerId.fullName : '-'}</td>
           <td>${r.vehicleId ? r.vehicleId.brand + ' ' + r.vehicleId.model : '-'}</td>
         `;
 
-        if (tableType === 'history') {
-          const jenis = r.isCrossBranch ? 'Lintas Cabang' : 'Lokal';
-          const asal = r.vehicleId && r.vehicleId.homeBranch ? `Cabang ${r.vehicleId.homeBranch}` : '-';
-          colsHtml += `
-            <td><span class="badge-status ${r.isCrossBranch ? 'bg-primary' : 'bg-success'}">${jenis}</span></td>
-            <td>${asal}</td>
-          `;
-        }
+        const jenis = r.isCrossBranch ? 'Lintas Cabang' : 'Lokal';
+        const asal = r.vehicleId && r.vehicleId.homeBranch ? `Cabang ${r.vehicleId.homeBranch}` : '-';
+
+        colsHtml += `
+          <td><span class="badge-status ${r.isCrossBranch ? 'bg-primary' : 'bg-success'}">${jenis}</span></td>
+          <td>${asal}</td>
+        `;
 
         colsHtml += `
           <td>${d}</td>
@@ -392,7 +548,7 @@
     function showVehicleDetail(id) {
       const v = allCrossVehicles.find(x => x._id === id);
       if (!v) return;
-      
+
       document.querySelector('#detailModal .modal-header h3').innerText = 'Detail Kendaraan';
       const content = document.getElementById('detailContent');
       let html = '';
@@ -403,12 +559,12 @@
       content.innerHTML = html;
       document.getElementById('detailModal').classList.add('show');
     }
-    
+
     async function fetchAvailableVehicles() {
       try {
         const startVal = document.getElementById('startDate').value;
         const daysVal = parseInt(document.getElementById('totalDays').value) || 1;
-        
+
         if (!startVal) return;
 
         const start = new Date(startVal);
@@ -418,17 +574,17 @@
         vSelect.innerHTML = '<option value="">Memuat kendaraan (Lokal)...</option>';
         vSelect.disabled = true;
 
-        let localVehs = await apiFetch(`/api/vehicles?startDate=${start.toISOString()}&endDate=${end.toISOString()}`);
+        let localVehs = await apiFetch(`/api/vehicles?status=Available&startDate=${start.toISOString()}&endDate=${end.toISOString()}`);
         vehicles = localVehs;
-        
+
         vSelect.innerHTML = '<option value="">Pilih Kendaraan...</option>';
         if (vehicles.length === 0) {
-           vSelect.innerHTML = '<option value="">Tidak ada kendaraan lokal tersedia</option>';
+          vSelect.innerHTML = '<option value="">Tidak ada kendaraan lokal tersedia</option>';
         } else {
-           vehicles.forEach(v => {
-             vSelect.innerHTML += `<option value="${v._id}">${v.brand} ${v.model} - ${v.plateNumber} (Rp ${v.dailyRate}/hr)</option>`;
-           });
-           vSelect.disabled = false;
+          vehicles.forEach(v => {
+            vSelect.innerHTML += `<option value="${v._id}">${v.brand} ${v.model} - ${v.plateNumber} (Rp ${v.dailyRate}/hr)</option>`;
+          });
+          vSelect.disabled = false;
         }
       } catch (err) {
         console.error(err);
@@ -532,19 +688,19 @@
         }
       }
       await Promise.all(fetchPromises);
-      
+
       allCrossVehicles = fetchedVehicles;
       renderCrossBranchTables();
     }
 
     function renderCrossBranchTables() {
       const container = document.getElementById('crossBranchResults');
-      
+
       const customerId = document.getElementById('crossCustomer').value;
       if (!customerId) return;
 
       const search = document.getElementById('searchCross').value.toLowerCase();
-      const filtered = allCrossVehicles.filter(v => 
+      const filtered = allCrossVehicles.filter(v =>
         (v.brand + ' ' + v.model).toLowerCase().includes(search) || v.plateNumber.toLowerCase().includes(search)
       );
 
@@ -555,11 +711,11 @@
 
       const grouped = {};
       for (const [branch, port] of Object.entries(ports)) {
-         if (branch !== currentUser.branchCode) grouped[branch] = [];
+        if (branch !== currentUser.branchCode) grouped[branch] = [];
       }
-      
+
       filtered.forEach(v => {
-         if (grouped[v.targetBranchCode]) grouped[v.targetBranchCode].push(v);
+        if (grouped[v.targetBranchCode]) grouped[v.targetBranchCode].push(v);
       });
 
       let html = '';
@@ -569,16 +725,26 @@
             <h4>Cabang ${branch}</h4>
             <div class="table-container">
               <table>
-                <thead><tr><th>Kendaraan</th><th>Plat Nomor</th><th>Harga (Per Hari)</th><th>Aksi</th></tr></thead>
+                <thead><tr><th>Kendaraan</th><th>Plat Nomor</th><th>Harga (Per Hari)</th><th>Keterangan</th><th>Aksi</th></tr></thead>
                 <tbody>`;
-          
+
           vehicles.forEach(v => {
-            const existingReq = currentData.find(r => r.vehicleId && r.vehicleId._id === v._id && r.status === 'Waiting Transfer');
-            
+            const existingReq = currentData.find(r => r.vehicleId && r.vehicleId._id === v._id && (r.status === 'Waiting Transfer' || r.status === 'Pending Payment' || r.status === 'Active'));
+
             let btnHtml = `<div style="display: flex; flex-wrap: nowrap; gap: 5px;">
                            <button class="action-btn" onclick="showVehicleDetail('${v._id}')">Detail</button>`;
+
+            let ketHtml = '<span class="badge-status bg-success">Tersedia</span>';
+
             if (existingReq) {
-              btnHtml += `<button class="action-btn reject" onclick="cancelCrossBranchRequest('${existingReq._id}')">Cancel Request</button>`;
+              if (existingReq.status === 'Pending Payment') {
+                ketHtml = '<span class="badge-status bg-warning">Belum Dibayar</span>';
+                btnHtml += `<button class="action-btn reject" onclick="cancelCrossBranchRequest('${existingReq._id}')">Cancel Request</button>`;
+              } else if (existingReq.status === 'Waiting Transfer') {
+                ketHtml = '<span class="badge-status bg-primary">Menunggu Dikirim</span>';
+              } else {
+                ketHtml = `<span class="badge-status bg-success">${existingReq.status}</span>`;
+              }
             } else {
               btnHtml += `<button class="action-btn bg-primary" onclick="requestCrossBranch('${v._id}', '${v.targetBranchCode}', ${v.dailyRate})">Request</button>`;
             }
@@ -588,6 +754,7 @@
               <td>${v.brand} ${v.model}</td>
               <td>${v.plateNumber}</td>
               <td>Rp ${v.dailyRate}</td>
+              <td>${ketHtml}</td>
               <td>${btnHtml}</td>
             </tr>`;
           });
@@ -595,7 +762,7 @@
           html += `</tbody></table></div></div>`;
         }
       }
-      
+
       if (html === '') {
         container.innerHTML = '<p style="padding: 2rem; text-align: center; color: var(--text-muted);">Tidak ada kendaraan yang tersedia.</p>';
       } else {
@@ -603,10 +770,51 @@
       }
     }
 
-    async function requestCrossBranch(vehicleId, targetBranchCode, dailyRate) {
+    let tempCrossRequestData = null;
+
+    function closeCrossPickupModal() {
+      document.getElementById('crossPickupModal').classList.remove('show');
+    }
+
+    function requestCrossBranch(vehicleId, targetBranchCode, dailyRate) {
       const customerId = document.getElementById('crossCustomer').value;
       const startVal = document.getElementById('crossStartDate').value;
       const totalDays = parseInt(document.getElementById('crossTotalDays').value);
+
+      if (!customerId || !startVal || !totalDays) {
+        alert('Mohon lengkapi pilihan Customer, Tanggal, dan Total Hari.');
+        return;
+      }
+
+      tempCrossRequestData = {
+        vehicleId, targetBranchCode, dailyRate, customerId, startVal, totalDays
+      };
+
+      // Populate radio options for pickupBranch
+      let radioHtml = `<label style="display:block; margin-bottom: 8px;">
+        <input type="radio" name="pickupBranchRadio" value="${currentUser.branchCode}" checked>
+        Cabang ${currentUser.branchCode} (Lokasi Saat Ini)
+      </label>`;
+      
+      for (const branch of Object.keys(ports)) {
+        if (branch !== currentUser.branchCode) {
+          radioHtml += `<label style="display:block; margin-bottom: 8px;">
+            <input type="radio" name="pickupBranchRadio" value="${branch}">
+            Cabang ${branch}
+          </label>`;
+        }
+      }
+
+      document.getElementById('pickupBranchOptions').innerHTML = radioHtml;
+      document.getElementById('crossPickupModal').classList.add('show');
+    }
+
+    document.getElementById('crossPickupForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!tempCrossRequestData) return;
+
+      const { vehicleId, targetBranchCode, dailyRate, customerId, startVal, totalDays } = tempCrossRequestData;
+      const pickupBranch = document.querySelector('input[name="pickupBranchRadio"]:checked').value;
 
       const startDate = new Date(startVal);
       const expectedReturnDate = new Date(startDate.getTime() + totalDays * 24 * 60 * 60 * 1000);
@@ -620,14 +828,17 @@
             vehicleId, customerId, totalDays, totalPrice,
             startDate: startDate.toISOString(),
             expectedReturnDate: expectedReturnDate.toISOString(),
-            targetBranchCode
+            targetBranchCode, // This is the ownerBranch
+            pickupBranch
           })
         });
-        alert('Request penyewaan lintas cabang berhasil dikirim!');
+        
+        closeCrossPickupModal();
+        alert('Booking tersimpan. Silakan konfirmasi payment terlebih dahulu agar request dikirim ke cabang pemilik dan cabang tujuan!');
         await loadData();
         renderCrossBranchTables();
       } catch (err) { alert(err.message); }
-    }
+    });
 
     async function cancelCrossBranchRequest(rentalId) {
       if (!confirm('Anda yakin ingin membatalkan request lintas cabang ini?')) return;
@@ -676,53 +887,113 @@
       } catch (err) { alert(err.message); }
     }
 
-    async function loadIncomingTransfers() {
+      function renderLogisticsTables() {
       try {
-        const transfers = await apiFetch('/api/transfers');
+        const transfers = incomingTransfers || [];
+        const ongoing = transfers.filter(t => t.status !== 'Completed' && t.status !== 'Rejected');
         
-        const incoming = transfers.filter(t => t.fromBranch === currentUser.branchCode && t.status === 'Requested');
-        const tbodyIn = document.getElementById('incoming-results');
-        tbodyIn.innerHTML = '';
-        
-        if (incoming.length > 0) {
-          document.getElementById('logistics-badge').innerText = incoming.length;
+        let history = transfers.filter(t => t.status === 'Completed' || t.status === 'Rejected');
+        const qHist = document.getElementById('searchHistoryRequests')?.value.toLowerCase() || '';
+        if (qHist) {
+          history = history.filter(t => 
+            (t.transferCode && t.transferCode.toLowerCase().includes(qHist)) ||
+            (t.fromBranch && t.fromBranch.toLowerCase().includes(qHist)) ||
+            (t.rentalBranch && t.rentalBranch.toLowerCase().includes(qHist))
+          );
+        }
+
+        // Render Ongoing
+        const tbodyOn = document.getElementById('ongoing-requests-tbody');
+        tbodyOn.innerHTML = '';
+        if (ongoing.length > 0) {
+          document.getElementById('logistics-badge').innerText = ongoing.length;
           document.getElementById('logistics-badge').style.display = 'inline-block';
         } else {
           document.getElementById('logistics-badge').style.display = 'none';
         }
 
-        if(incoming.length === 0) {
-          tbodyIn.innerHTML = '<tr><td colspan="5" style="text-align:center">Tidak ada request masuk.</td></tr>';
+        if (ongoing.length === 0) {
+          tbodyOn.innerHTML = '<tr><td colspan="6" style="text-align:center">Tidak ada request yang sedang berlangsung.</td></tr>';
         } else {
-          incoming.forEach(t => {
-            let actionBtn = `<button class="action-btn bg-success" onclick="processTransfer('${t._id}', 'approve')">Approve (Kirim)</button>
-                             <button class="action-btn reject" onclick="processTransfer('${t._id}', 'reject')">Reject</button>`;
+          ongoing.forEach(t => {
+            const isSelf = t.toBranch === t.fromBranch;
+            let actionBtn = '';
             
+            if (t.status === 'Requested' && t.fromBranch === currentUser.branchCode) {
+              const actionText = isSelf ? 'Approve & Siapkan' : 'Approve & Kirim';
+              actionBtn = `<button class="action-btn bg-success" onclick="processTransfer('${t._id}', 'approve')">${actionText}</button>
+                           <button class="action-btn reject" onclick="processTransfer('${t._id}', 'reject')">Tolak</button>`;
+            } else if (t.status === 'Approved' && t.toBranch === currentUser.branchCode) {
+              actionBtn = `<button class="action-btn bg-primary" onclick="processTransfer('${t._id}', 'arrive')">Konfirmasi Tiba</button>`;
+            } else if (t.status === 'Arrived' && t.toBranch === currentUser.branchCode) {
+              const actionText = isSelf ? 'Selesaikan Penyewaan' : 'Kembalikan Kendaraan';
+              actionBtn = `<button class="action-btn bg-success" onclick="processTransfer('${t._id}', 'complete')">${actionText}</button>`;
+            }
+
             const tr = document.createElement('tr');
             tr.innerHTML = `
               <td>${t.transferCode}</td>
-              <td>Cabang ${t.toBranch}</td>
-              <td>${t.vehicleId?.brand || '(Data Hapus)'} ${t.vehicleId?.model || ''}</td>
+              <td>Cabang ${t.fromBranch}</td>
+              <td>Cabang ${t.rentalBranch}</td>
+              <td>${t.vehicleId?.brand || ''} ${t.vehicleId?.model || ''} (${t.vehicleId?.plateNumber || ''})</td>
               <td><span class="badge-status bg-warning">${t.status}</span></td>
-              <td>
-                <div style="display: flex; flex-wrap: nowrap; gap: 5px;">${actionBtn}</div>
-              </td>
+              <td><div style="display: flex; flex-wrap: nowrap; gap: 5px;">${actionBtn}</div></td>
             `;
-            tbodyIn.appendChild(tr);
+            tbodyOn.appendChild(tr);
           });
         }
-      } catch(err) { console.error('Error loadIncomingTransfers:', err); }
+
+        // Render History
+        const tbodyHist = document.getElementById('history-requests-tbody');
+        tbodyHist.innerHTML = '';
+        if (history.length === 0) {
+          tbodyHist.innerHTML = '<tr><td colspan="7" style="text-align:center">Belum ada riwayat.</td></tr>';
+        } else {
+          history.forEach(t => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td>${t.transferCode}</td>
+              <td>Cabang ${t.fromBranch}</td>
+              <td>Cabang ${t.toBranch}</td>
+              <td>Cabang ${t.rentalBranch}</td>
+              <td>${t.vehicleId?.brand || ''} ${t.vehicleId?.model || ''}</td>
+              <td><span class="badge-status ${t.status === 'Completed' ? 'bg-success' : 'reject'}">${t.status}</span></td>
+              <td><button class="action-btn bg-primary" onclick="showTransferDetail('${t._id}')">Detail</button></td>
+            `;
+            tbodyHist.appendChild(tr);
+          });
+        }
+      } catch (err) { console.error('Error renderLogisticsTables:', err); }
     }
 
     async function processTransfer(id, action) {
+      const confirmMsg = action === 'approve' ? 'Setujui request ini?' : 
+                         action === 'reject' ? 'Tolak request ini?' : 
+                         action === 'arrive' ? 'Konfirmasi mobil telah tiba di cabang Anda?' :
+                         'Konfirmasi penyewaan telah selesai dan mobil dikembalikan?';
+      if (!confirm(confirmMsg)) return;
+
       try {
         await apiFetch(`/api/transfers/${id}/${action}`, { method: 'POST' });
-        loadIncomingTransfers();
-        alert('Sukses memproses request logistik!');
-      } catch(err) { 
+        alert('Aksi berhasil!');
+        loadData();
+      } catch (err) {
         console.error('Error processTransfer:', err);
-        alert(err.message); 
+        alert(err.message);
       }
+    }
+
+    function showTransferDetail(id) {
+      const t = incomingTransfers.find(x => x._id === id);
+      if(!t) return;
+      let info = `Kode Transfer: ${t.transferCode}\n`;
+      info += `Status: ${t.status}\n`;
+      info += `Cabang Asal Mobil: ${t.fromBranch}\n`;
+      info += `Cabang Rental: ${t.rentalBranch}\n`;
+      info += `Cabang Pengambilan: ${t.toBranch}\n`;
+      info += `Kendaraan: ${t.vehicleId?.brand || ''} ${t.vehicleId?.model || ''}\n`;
+      info += `Catatan: ${t.notes || '-'}\n`;
+      alert(info);
     }
   </script>
 </body>

@@ -49,6 +49,7 @@
       <a href="/vehicles.html" class="nav-link active">Kendaraan</a>
       <a href="/customers.html" class="nav-link">Pelanggan</a>
       <a href="/employees.html" class="nav-link">Karyawan</a>
+      <a href="/notifications.html" class="nav-link">Notifikasi</a>
     </nav>
   </aside>
 
@@ -106,7 +107,9 @@
           <select id="filterStatus" class="form-control" style="height: 44px;" onchange="renderTable()">
             <option value="">Semua Status</option>
             <option value="Available">Available</option>
+            <option value="Booked">Booked</option>
             <option value="Rented">Rented</option>
+            <option value="Rented by Request">Rented by Request</option>
             <option value="Transfer">Transfer</option>
             <option value="Maintenance">Maintenance</option>
           </select>
@@ -280,8 +283,10 @@
           <td>
             <div style="display: flex; flex-wrap: nowrap; gap: 5px;">
               <button class="action-btn" onclick="showDetail('${v._id}')">Detail</button>
+              ${(v.status === 'Available' || v.status === 'Maintenance') ? `
               <button class="action-btn" onclick="openModal('${v._id}')">Edit</button>
               <button class="action-btn reject" onclick="deleteData('${v._id}')">Hapus</button>
+              ` : ''}
             </div>
           </td>
         `;
@@ -324,7 +329,7 @@
           document.getElementById('seatCapacity').value = item.seatCapacity;
           document.getElementById('status').value = item.status;
 
-          if (item.status === 'Rented' || item.status === 'Transfer') {
+          if (item.status === 'Rented' || item.status === 'Transfer' || item.status === 'Booked') {
             if (!Array.from(document.getElementById('status').options).some(opt => opt.value === item.status)) {
               const opt = document.createElement('option');
               opt.value = item.status;
@@ -333,9 +338,16 @@
             }
             document.getElementById('status').value = item.status;
           }
+
+          if (item.status === 'Rented' || item.status === 'Booked') {
+            document.getElementById('status').disabled = true;
+          } else {
+            document.getElementById('status').disabled = false;
+          }
         }
       } else {
         document.getElementById('vehicleCode').value = 'V-' + Date.now();
+        document.getElementById('status').disabled = false;
       }
       document.getElementById('crudModal').classList.add('show');
     }

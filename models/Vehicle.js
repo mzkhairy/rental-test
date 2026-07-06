@@ -14,7 +14,7 @@ const vehicleSchema = new mongoose.Schema({
   currentBranch: { type: String, required: true },
   status: {
     type: String,
-    enum: ['Available', 'Reserved', 'Rented', 'Transfer', 'Maintenance'],
+    enum: ['Available', 'Reserved', 'Booked', 'Rented', 'Transfer', 'Maintenance', 'Rented by Request'],
     default: 'Available'
   },
   odometer: { type: Number, default: 0 },

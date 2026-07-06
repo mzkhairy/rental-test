@@ -13,6 +13,8 @@ const rentalSchema = new mongoose.Schema({
   totalDays: { type: Number, required: true },
   totalPrice: { type: Number, required: true },
   isCrossBranch: { type: Boolean, default: false },
+  ownerBranch: { type: String },
+  rentalBranch: { type: String, required: true },
   transferId: { type: mongoose.Schema.Types.ObjectId, ref: 'Transfer' },
   status: { 
     type: String, 
