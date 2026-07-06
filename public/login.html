@@ -1,28 +1,45 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login - RentSync</title>
   <link rel="stylesheet" href="/css/style.css">
 </head>
+
 <body>
   <div class="auth-container">
     <div class="auth-card">
       <h2>RentSync</h2>
       <p id="branch-info">Sistem Manajemen Cabang</p>
-      
+
       <form id="login-form">
         <div class="form-group">
           <label for="emailOrCode">Email / ID Karyawan</label>
-          <input type="text" id="emailOrCode" class="form-control" required placeholder="admin1@jkt.com">
+          <input type="text" id="emailOrCode" class="form-control" required>
         </div>
         <div class="form-group">
           <label for="password">Password</label>
-          <input type="password" id="password" class="form-control" required placeholder="••••••••">
+          <input type="password" id="password" class="form-control" required>
         </div>
         <button type="submit" class="btn-primary">Masuk</button>
       </form>
+
+      <div
+        style="margin-top: 25px; padding: 15px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; font-size: 0.85rem; color: #bbb; text-align: left;">
+        <div style="margin-bottom: 8px; color: #fff; font-weight: 600;">Akun Demo Admin:</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+          <div>• BKS: <code>admin1@bks.com</code></div>
+          <div>• BGR: <code>admin1@bgr.com</code></div>
+          <div>• DPK: <code>admin1@dpk.com</code></div>
+          <div>• JKT: <code>admin1@jkt.com</code></div>
+          <div>• TGR: <code>admin1@tgr.com</code></div>
+        </div>
+        <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
+          Password (Semua): <code>Rentsync123!</code>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -40,13 +57,13 @@
       const password = document.getElementById('password').value;
       const btn = e.target.querySelector('button');
       btn.textContent = 'Loading...';
-      
+
       try {
         const data = await apiFetch('/api/auth/login', {
           method: 'POST',
           body: JSON.stringify({ emailOrCode, password })
         });
-        
+
         if (data && data.user) {
           localStorage.setItem('user', JSON.stringify(data.user));
           window.location.href = '/dashboard.html';
@@ -58,4 +75,5 @@
     });
   </script>
 </body>
+
 </html>
