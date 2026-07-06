@@ -53,7 +53,7 @@ $switch = @{
 $cfg = if ($network -eq "zerotier") { $zerotier } else { $switch }
 $myIp = $cfg[$branchCode].ip
 $myPort = $cfg[$branchCode].port
-$mongoUri = "mongodb://$($cfg['bks'].ip):$($cfg['bks'].port),$($cfg['bgr'].ip):$($cfg['bgr'].port),$($cfg['dpk'].ip):$($cfg['dpk'].port),$($cfg['jkt'].ip):$($cfg['jkt'].port),$($cfg['tgr'].ip):$($cfg['tgr'].port)/rentsync_$branchCode?replicaSet=rsRental"
+$mongoUri = "mongodb://$($cfg['bks'].ip):$($cfg['bks'].port),$($cfg['bgr'].ip):$($cfg['bgr'].port),$($cfg['dpk'].ip):$($cfg['dpk'].port),$($cfg['jkt'].ip):$($cfg['jkt'].port),$($cfg['tgr'].ip):$($cfg['tgr'].port)/rentsync_${branchCode}?replicaSet=rsRental"
 
 # Cek ketersediaan MongoDB
 $mongodCmd = "mongod"

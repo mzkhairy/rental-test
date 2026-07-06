@@ -57,13 +57,13 @@ const seedData = async () => {
   try {
     const salt = await bcrypt.genSalt(10);
     const adminPassword = await bcrypt.hash('Rentsync123!', salt);
-    const baseUri = process.env.MONGO_URI ? process.env.MONGO_URI.split('/')[0] + '/' + process.env.MONGO_URI.split('/')[1] + '/' + process.env.MONGO_URI.split('/')[2] : 'mongodb://127.0.0.1:27021,127.0.0.1:27022,127.0.0.1:27023,127.0.0.1:27024,127.0.0.1:27025';
+    const baseUri = process.env.MONGO_URI ? process.env.MONGO_URI.substring(0, process.env.MONGO_URI.lastIndexOf('/')) : 'mongodb://127.0.0.1:27021,127.0.0.1:27022,127.0.0.1:27023,127.0.0.1:27024,127.0.0.1:27025';
     let empSeq = 1;
     let vehSeq = 1;
 
     for (const b of branchesData) {
       console.log(`\nMenghubungkan ke database ${b.dbName}...`);
-      const uri = process.env.MONGO_URI ? process.env.MONGO_URI.replace(/rentsync_[a-z]+/, b.dbName) : `${baseUri}/${b.dbName}?replicaSet=rsRental`;
+      const uri = `${baseUri}/${b.dbName}?replicaSet=rsRental`;
       
       await mongoose.disconnect();
       await mongoose.connect(uri);
