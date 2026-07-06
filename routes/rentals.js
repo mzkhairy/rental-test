@@ -91,6 +91,58 @@ router.post('/', requireAuth, async (req, res) => {
   }
 });
 
+router.put('/:id', requireAuth, async (req, res) => {
+  try {
+    const rental = await Rental.findById(req.params.id);
+    if (!rental || rental.status !== 'Pending Payment') {
+      return res.status(400).json({ message: 'Hanya penyewaan dengan status Pending Payment yang dapat diedit' });
+    }
+
+    const { vehicleId, customerId, totalDays, totalPrice, startDate, expectedReturnDate, targetBranchCode } = req.body;
+
+    if (!startDate || !expectedReturnDate) {
+      return res.status(400).json({ message: 'Tanggal mulai dan selesai wajib diisi' });
+    }
+
+    const isCrossBranch = targetBranchCode && targetBranchCode !== process.env.BRANCH_CODE;
+    
+    // Check if vehicle changed
+    if (rental.vehicleId.toString() !== vehicleId) {
+      // Free old vehicle if it was local
+      if (!rental.isCrossBranch) {
+        await Vehicle.findByIdAndUpdate(rental.vehicleId, { status: 'Available' });
+      }
+      
+      // Book new vehicle if it is local
+      if (!isCrossBranch) {
+        const vLocal = await Vehicle.findById(vehicleId);
+        if (vLocal) {
+          vLocal.status = 'Booked';
+          await vLocal.save();
+        }
+      }
+    } else {
+      // Vehicle did not change, but branch type might have changed? (e.g. from cross-branch to local for the SAME vehicle? That doesn't make sense since cross-branch vehicles don't exist in local DB. So if vehicleId is same, isCrossBranch is same).
+    }
+
+    rental.vehicleId = vehicleId;
+    rental.customerId = customerId;
+    rental.startDate = new Date(startDate);
+    rental.expectedReturnDate = new Date(expectedReturnDate);
+    rental.totalDays = totalDays;
+    rental.totalPrice = totalPrice;
+    rental.isCrossBranch = isCrossBranch;
+    rental.ownerBranch = isCrossBranch ? targetBranchCode : process.env.BRANCH_CODE;
+    rental.pickupBranch = req.body.pickupBranch || process.env.BRANCH_CODE;
+    rental.returnBranch = req.body.pickupBranch || process.env.BRANCH_CODE;
+
+    await rental.save();
+    res.json(rental);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
 router.put('/:id/confirm-payment', requireAuth, async (req, res) => {
   try {
     const rental = await Rental.findById(req.params.id);
@@ -103,6 +155,9 @@ router.put('/:id/confirm-payment', requireAuth, async (req, res) => {
       const ownerBranchCode = rental.ownerBranch;
       const destinationBranchCode = rental.pickupBranch;
       const ownerBranch = await Branch.findOne({ branchCode: ownerBranchCode });
+      const vehicle = await Vehicle.findById(rental.vehicleId);
+      const vehicleName = vehicle ? `${vehicle.brand} ${vehicle.model}` : undefined;
+      const vehiclePlate = vehicle ? vehicle.plateNumber : undefined;
 
       if (ownerBranch) {
         try {
@@ -112,6 +167,10 @@ router.put('/:id/confirm-payment', requireAuth, async (req, res) => {
             ownerBranch: ownerBranchCode,
             destinationBranch: destinationBranchCode,
             vehicleId: rental.vehicleId,
+            vehicleName,
+            vehiclePlate,
+            startDate: rental.startDate,
+            totalDays: rental.totalDays,
             requestedBy: rental.handledBy,
             notes: `Paid Booking ${rental.rentalCode}`,
             status: 'Requested'
@@ -123,6 +182,10 @@ router.put('/:id/confirm-payment', requireAuth, async (req, res) => {
             fromBranch: ownerBranchCode,
             toBranch: destinationBranchCode,
             vehicleId: rental.vehicleId,
+            vehicleName,
+            vehiclePlate,
+            startDate: rental.startDate,
+            totalDays: rental.totalDays,
             requestedBy: rental.handledBy,
             notes: `Paid Booking ${rental.rentalCode}`,
             status: 'Requested'
@@ -140,6 +203,10 @@ router.put('/:id/confirm-payment', requireAuth, async (req, res) => {
                 ownerBranch: ownerBranchCode,
                 destinationBranch: destinationBranchCode,
                 vehicleId: rental.vehicleId,
+                vehicleName,
+                vehiclePlate,
+                startDate: rental.startDate,
+                totalDays: rental.totalDays,
                 requestedBy: rental.handledBy,
                 notes: `Expect incoming car from ${ownerBranchCode}`,
                 status: 'Requested'

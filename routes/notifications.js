@@ -31,4 +31,14 @@ router.put('/:id/read', requireAuth, async (req, res) => {
   }
 });
 
+// Tandai semua notifikasi sudah dibaca
+router.put('/read-all', requireAuth, async (req, res) => {
+  try {
+    await Notification.updateMany({ branchCode: process.env.BRANCH_CODE, isRead: false }, { isRead: true });
+    res.json({ message: 'Semua notifikasi ditandai sudah dibaca' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 module.exports = router;

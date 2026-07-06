@@ -52,7 +52,7 @@
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
           <span class="badge" id="notif-badge">0</span>
           <div class="notif-dropdown" id="notif-dropdown">
-            <div class="notif-header">Notifikasi Rental Lintas Cabang</div>
+            <div class="notif-header">Notifikasi</div>
             <div class="notif-body" id="notif-body"></div>
           </div>
         </div>
@@ -67,9 +67,11 @@
       <div class="page-header" style="justify-content: space-between; align-items: center; display: flex;">
         <div>
           <h1 class="page-title">Riwayat Notifikasi</h1>
-          <p style="color:var(--text-muted); margin-top: 0.5rem;">Seluruh log aktivitas lintas cabang dan pembaruan sistem.</p>
         </div>
-        <button class="btn-primary" style="background:var(--bg-main); color:var(--text-main); border:1px solid var(--border-color); width: auto;" onclick="loadNotifications()">Refresh</button>
+        <div style="display: flex; gap: 10px;">
+          <button class="btn-primary" style="background:var(--success-color); color:#fff; border:none; width: auto;" onclick="markAllAsRead()">Tandai Baca Semua</button>
+          <button class="btn-primary" style="background:var(--bg-main); color:var(--text-main); border:1px solid var(--border-color); width: auto;" onclick="loadNotifications()">Refresh</button>
+        </div>
       </div>
 
       <div id="notifications-list" style="margin-top: 2rem;">
@@ -101,9 +103,6 @@
           if (!notif.isRead) {
             actionsHtml += `<button class="action-btn bg-success" onclick="markAsRead('${notif._id}')">Tandai Dibaca</button>`;
           }
-          if (notif.link) {
-            actionsHtml += `<button class="action-btn bg-primary" onclick="window.location.href='${notif.link}'">Lihat Detail</button>`;
-          }
 
           item.innerHTML = `
             <div>
@@ -132,7 +131,18 @@
       }
     }
 
+    async function markAllAsRead() {
+      try {
+        await apiFetch(`/api/notifications/read-all`, { method: 'PUT' });
+        loadNotifications();
+        if (typeof fetchNotifications === 'function') fetchNotifications();
+      } catch (err) {
+        alert('Gagal tandai semua dibaca: ' + err.message);
+      }
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
+      initTopbar();
       loadNotifications();
     });
   </script>

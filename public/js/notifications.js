@@ -20,13 +20,12 @@ const fetchNotifications = async () => {
           <div class="notif-item-desc">${notif.message}</div>
         `;
         item.onclick = async () => {
-          // Tandai sudah dibaca
+          // Tandai sudah dibaca dan hapus dari dropdown
           try {
             await apiFetch(`/api/notifications/${notif._id}/read`, { method: 'PUT' });
-            window.location.href = notif.link;
+            fetchNotifications(); // Refresh dropdown
           } catch(e) {
             console.error('Gagal update notifikasi', e);
-            window.location.href = notif.link; // tetap pindah
           }
         };
         notifBody.appendChild(item);

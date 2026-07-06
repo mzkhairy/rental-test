@@ -91,7 +91,7 @@
           </svg>
           <span class="badge" id="notif-badge">0</span>
           <div class="notif-dropdown" id="notif-dropdown">
-            <div class="notif-header">Notifikasi Rental Lintas Cabang</div>
+            <div class="notif-header">Notifikasi</div>
             <div class="notif-body" id="notif-body"></div>
           </div>
         </div>
@@ -135,8 +135,10 @@
                 <th>Kode Rental</th>
                 <th>Customer</th>
                 <th>Kendaraan</th>
+                <th>Plat Nomor</th>
                 <th>Jenis</th>
                 <th>Asal Cabang</th>
+                <th>Tujuan Cabang</th>
                 <th>Tanggal Pinjam</th>
                 <th>Lama (Hari)</th>
                 <th>Status</th>
@@ -145,7 +147,7 @@
             </thead>
             <tbody id="table-body-ongoing">
               <tr>
-                <td colspan="9" style="text-align:center">Memuat...</td>
+                <td colspan="10" style="text-align:center">Memuat...</td>
               </tr>
             </tbody>
           </table>
@@ -181,6 +183,7 @@
                 <th>Kendaraan</th>
                 <th>Jenis</th>
                 <th>Asal Cabang</th>
+                <th>Tujuan Cabang</th>
                 <th>Tanggal Pinjam</th>
                 <th>Lama (Hari)</th>
                 <th>Status</th>
@@ -189,7 +192,7 @@
             </thead>
             <tbody id="table-body-history">
               <tr>
-                <td colspan="9" style="text-align:center">Memuat...</td>
+                <td colspan="10" style="text-align:center">Memuat...</td>
               </tr>
             </tbody>
           </table>
@@ -243,16 +246,20 @@
           <table>
             <thead>
               <tr>
-                <th>Kode Transfer</th>
-                <th>Asal Mobil</th>
-                <th>Cabang Rental</th>
+                <th>No Transaksi</th>
+                <th>Dari Cabang</th>
+                <th>Cabang Pengambilan</th>
+                <th>Rental Cabang</th>
                 <th>Kendaraan</th>
+                <th>Plat Nomor</th>
+                <th>Tanggal Mulai</th>
+                <th>Lama (Hari)</th>
                 <th>Status</th>
                 <th>Aksi</th>
               </tr>
             </thead>
             <tbody id="ongoing-requests-tbody">
-              <tr><td colspan="6" style="text-align:center">Memuat...</td></tr>
+              <tr><td colspan="10" style="text-align:center">Memuat...</td></tr>
             </tbody>
           </table>
         </div>
@@ -315,6 +322,55 @@
           </select>
         </div>
         <button type="submit" class="btn-primary">Simpan Transaksi</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit Modal -->
+  <div id="editRentalModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Edit Transaksi (Pending Payment)</h3>
+        <button class="close-btn" onclick="closeEditRentalModal()">&times;</button>
+      </div>
+      <form id="editRentalForm">
+        <input type="hidden" id="editRentalId">
+        <input type="hidden" id="editOriginalVehicleId">
+        
+        <div id="editCrossBranchFields" style="display: none; padding: 10px; background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 15px;">
+          <h4 style="margin-top:0; margin-bottom: 10px; font-size: 0.95rem;">Opsi Lintas Cabang</h4>
+          <div class="form-group">
+            <label for="editOwnerBranch">Cabang Asal Mobil</label>
+            <select id="editOwnerBranch" class="form-control" onchange="fetchAvailableVehiclesForEdit()">
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="editPickupBranch">Cabang Pengambilan (Pickup)</label>
+            <select id="editPickupBranch" class="form-control">
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="editCustomerId">Pilih Customer</label>
+          <select id="editCustomerId" class="form-control" required></select>
+        </div>
+        <div class="form-group">
+          <label for="editStartDate">Tanggal Mulai</label>
+          <input type="date" id="editStartDate" class="form-control" required onchange="fetchAvailableVehiclesForEdit()">
+        </div>
+        <div class="form-group">
+          <label for="editTotalDays">Total Hari</label>
+          <input type="number" id="editTotalDays" class="form-control" required min="1"
+            onchange="fetchAvailableVehiclesForEdit()">
+        </div>
+        <div class="form-group">
+          <label for="editVehicleId">Pilih Kendaraan</label>
+          <select id="editVehicleId" class="form-control" required>
+            <option value="">Memuat kendaraan...</option>
+          </select>
+        </div>
+        <button type="submit" class="btn-primary">Simpan Perubahan</button>
       </form>
     </div>
   </div>
@@ -436,7 +492,7 @@
       const startDateFilter = document.getElementById('filterStartDate').value;
       const endDateFilter = document.getElementById('filterEndDate').value;
 
-      const ongoingData = currentData.filter(r => ['Active', 'Pending Payment', 'Waiting Transfer'].includes(r.status));
+      const ongoingData = currentData.filter(r => ['Active', 'Pending Payment', 'Waiting Transfer', 'Waiting Return'].includes(r.status));
       const historyData = currentData.filter(r => ['Completed', 'Cancelled'].includes(r.status));
 
       // Filter Ongoing
@@ -472,7 +528,7 @@
 
     function renderRows(tbody, data, emptyMessage, tableType) {
       if (data.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color: var(--text-muted)">${emptyMessage}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; color: var(--text-muted)">${emptyMessage}</td></tr>`;
         return;
       }
       tbody.innerHTML = '';
@@ -481,22 +537,24 @@
         if (r.status === 'Completed') statusClass = 'bg-success';
         if (r.status === 'Waiting Transfer') statusClass = 'bg-warning';
         if (r.status === 'Pending Payment') statusClass = 'bg-warning';
+        if (r.status === 'Waiting Return') statusClass = 'bg-warning';
         if (r.status === 'Cancelled') statusClass = 'bg-danger';
 
         let actionBtn = `<div style="display: flex; flex-wrap: nowrap; gap: 5px;">
                          <button class="action-btn" onclick="showDetail('${r._id}')">Detail</button>`;
 
         if (r.status === 'Waiting Transfer') {
-          // Hanya tampilkan Konfirmasi Tiba jika transfer sudah disetujui cabang lain
-          if (r.transferId && r.transferId.status === 'Approved') {
+          // Sembunyikan jika lintas cabang karena akan dieksekusi di tab Requests
+          if (!r.isCrossBranch && r.transferId && r.transferId.status === 'Approved') {
             actionBtn += `<button class="action-btn bg-success" onclick="confirmArrival('${r._id}')">Konfirmasi Tiba</button>`;
           }
         } else if (r.status === 'Pending Payment') {
+          actionBtn += `<button class="action-btn bg-warning" onclick="openEditRentalModal('${r._id}')">Edit</button>`;
           actionBtn += `<button class="action-btn bg-success" onclick="confirmPayment('${r._id}')">Konfirmasi Payment</button>`;
           actionBtn += `<button class="action-btn reject" onclick="cancelRental('${r._id}')">Batal</button>`;
         } else if (r.status === 'Active') {
-          // Hanya tampilkan tombol selesaikan sewa jika diambil di cabang ini
-          if (!(r.isCrossBranch && r.returnBranch !== currentUser.branchCode)) {
+          // Sembunyikan jika lintas cabang karena akan dieksekusi di tab Requests
+          if (!r.isCrossBranch) {
             actionBtn += `<button class="action-btn bg-success" onclick="returnVehicle('${r._id}')">Selesaikan Sewa</button>`;
           }
         }
@@ -513,13 +571,13 @@
 
         const jenis = r.isCrossBranch ? 'Lintas Cabang' : 'Lokal';
         const asal = r.vehicleId && r.vehicleId.homeBranch ? `Cabang ${r.vehicleId.homeBranch}` : '-';
+        const tujuan = r.pickupBranch ? `Cabang ${r.pickupBranch}` : '-';
 
         colsHtml += `
+          <td>${r.vehicleId?.plateNumber || '-'}</td>
           <td><span class="badge-status ${r.isCrossBranch ? 'bg-primary' : 'bg-success'}">${jenis}</span></td>
           <td>${asal}</td>
-        `;
-
-        colsHtml += `
+          <td>${tujuan}</td>
           <td>${d}</td>
           <td>${r.totalDays} hari</td>
           <td><span class="badge-status ${statusClass}">${r.status}</span></td>
@@ -648,6 +706,154 @@
         closeRentalModal();
         loadData();
         alert('Transaksi berhasil dibuat!');
+      } catch (err) { alert(err.message); }
+    });
+
+    // === EDIT RENTAL LOGIC ===
+    let editVehicles = [];
+    
+    function closeEditRentalModal() {
+      document.getElementById('editRentalModal').classList.remove('show');
+    }
+
+    async function openEditRentalModal(id) {
+      try {
+        const rental = currentData.find(r => r._id === id);
+        if (!rental) return;
+
+        document.getElementById('editRentalForm').reset();
+        document.getElementById('editRentalId').value = rental._id;
+        document.getElementById('editOriginalVehicleId').value = rental.vehicleId ? rental.vehicleId._id : '';
+        
+        if (rental.isCrossBranch) {
+          document.getElementById('editCrossBranchFields').style.display = 'block';
+          
+          const oSelect = document.getElementById('editOwnerBranch');
+          const pSelect = document.getElementById('editPickupBranch');
+          oSelect.innerHTML = '';
+          pSelect.innerHTML = '';
+          
+          Object.keys(ports).forEach(b => {
+             if (b !== currentUser.branchCode) {
+               oSelect.innerHTML += `<option value="${b}" ${rental.ownerBranch === b ? 'selected' : ''}>Cabang ${b}</option>`;
+               pSelect.innerHTML += `<option value="${b}" ${rental.pickupBranch === b ? 'selected' : ''}>Cabang ${b}</option>`;
+             }
+          });
+          pSelect.innerHTML += `<option value="${currentUser.branchCode}" ${rental.pickupBranch === currentUser.branchCode ? 'selected' : ''}>Cabang ${currentUser.branchCode} (Lokal)</option>`;
+        } else {
+          document.getElementById('editCrossBranchFields').style.display = 'none';
+        }
+        
+        document.getElementById('editStartDate').value = new Date(rental.startDate).toISOString().split('T')[0];
+        document.getElementById('editTotalDays').value = rental.totalDays || 1;
+
+        const custRes = await apiFetch('/api/customers');
+        const cSelect = document.getElementById('editCustomerId');
+        cSelect.innerHTML = '<option value="">Pilih Customer...</option>';
+        custRes.forEach(c => {
+          cSelect.innerHTML += `<option value="${c._id}" ${rental.customerId && rental.customerId._id === c._id ? 'selected' : ''}>${c.fullName}</option>`;
+        });
+
+        await fetchAvailableVehiclesForEdit(rental);
+        document.getElementById('editRentalModal').classList.add('show');
+      } catch (err) { alert(err.message); }
+    }
+
+    async function fetchAvailableVehiclesForEdit(currentRental = null) {
+      try {
+        const startVal = document.getElementById('editStartDate').value;
+        const daysVal = parseInt(document.getElementById('editTotalDays').value) || 1;
+        const isCross = document.getElementById('editCrossBranchFields').style.display === 'block';
+        const targetBranchCode = isCross ? document.getElementById('editOwnerBranch').value : '';
+
+        if (!startVal) return;
+
+        const start = new Date(startVal);
+        const end = new Date(start.getTime() + daysVal * 24 * 60 * 60 * 1000);
+
+        const vSelect = document.getElementById('editVehicleId');
+        vSelect.innerHTML = '<option value="">Memuat kendaraan...</option>';
+        vSelect.disabled = true;
+
+        let fetchedVehs = [];
+        if (targetBranchCode) {
+          const port = ports[targetBranchCode];
+          if (port) {
+            const r = await fetch(`http://127.0.0.1:${port}/api/vehicles/available?startDate=${start.toISOString()}&endDate=${end.toISOString()}`);
+            const data = await r.json();
+            if (data.vehicles) fetchedVehs = data.vehicles;
+          }
+        } else {
+          fetchedVehs = await apiFetch(`/api/vehicles?status=Available&startDate=${start.toISOString()}&endDate=${end.toISOString()}`);
+        }
+
+        editVehicles = fetchedVehs;
+
+        const originalVehicleId = document.getElementById('editOriginalVehicleId').value;
+        // If we are editing, the CURRENT vehicle might not be "Available" because it's "Booked" for THIS rental.
+        // Or if it's cross branch, the current vehicle is not in `fetchedVehs`.
+        // So we manually inject the current vehicle so it remains selectable.
+        if (originalVehicleId) {
+          const rentalId = document.getElementById('editRentalId').value;
+          const rData = currentData.find(r => r._id === rentalId);
+          // Only inject original vehicle if we are looking at its actual owner branch (or if local, ownerBranch is current branch)
+          const isSameBranch = rData && (targetBranchCode || currentUser.branchCode) === (rData.ownerBranch || currentUser.branchCode);
+          
+          if (isSameBranch) {
+            const exists = editVehicles.find(v => v._id === originalVehicleId);
+            if (!exists && rData && rData.vehicleId && rData.vehicleId._id === originalVehicleId) {
+               editVehicles.push(rData.vehicleId);
+            }
+          }
+        }
+
+        vSelect.innerHTML = '<option value="">Pilih Kendaraan...</option>';
+        if (editVehicles.length === 0) {
+          vSelect.innerHTML = '<option value="">Tidak ada kendaraan tersedia</option>';
+        } else {
+          editVehicles.forEach(v => {
+            const isSelected = (originalVehicleId === v._id) ? 'selected' : '';
+            vSelect.innerHTML += `<option value="${v._id}" ${isSelected}>${v.brand} ${v.model} - ${v.plateNumber} (Rp ${v.dailyRate}/hr)</option>`;
+          });
+          vSelect.disabled = false;
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    document.getElementById('editRentalForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('editRentalId').value;
+      const vehicleId = document.getElementById('editVehicleId').value;
+      const customerId = document.getElementById('editCustomerId').value;
+      const totalDays = parseInt(document.getElementById('editTotalDays').value);
+      const startVal = document.getElementById('editStartDate').value;
+      
+      const isCross = document.getElementById('editCrossBranchFields').style.display === 'block';
+      const targetBranchCode = isCross ? document.getElementById('editOwnerBranch').value : '';
+      const pickupBranch = isCross ? document.getElementById('editPickupBranch').value : currentUser.branchCode;
+
+      const v = editVehicles.find(x => x._id === vehicleId);
+      const totalPrice = v.dailyRate * totalDays;
+
+      const startDate = new Date(startVal);
+      const expectedReturnDate = new Date(startDate.getTime() + totalDays * 24 * 60 * 60 * 1000);
+
+      try {
+        await apiFetch(`/api/rentals/${id}`, {
+          method: 'PUT',
+          body: JSON.stringify({
+            vehicleId, customerId, totalDays, totalPrice,
+            startDate: startDate.toISOString(),
+            expectedReturnDate: expectedReturnDate.toISOString(),
+            targetBranchCode,
+            pickupBranch
+          })
+        });
+        closeEditRentalModal();
+        loadData();
+        alert('Transaksi berhasil di-edit!');
       } catch (err) { alert(err.message); }
     });
 
@@ -913,7 +1119,7 @@
         }
 
         if (ongoing.length === 0) {
-          tbodyOn.innerHTML = '<tr><td colspan="6" style="text-align:center">Tidak ada request yang sedang berlangsung.</td></tr>';
+          tbodyOn.innerHTML = '<tr><td colspan="10" style="text-align:center">Tidak ada request yang sedang berlangsung.</td></tr>';
         } else {
           ongoing.forEach(t => {
             const isSelf = t.toBranch === t.fromBranch;
@@ -926,16 +1132,33 @@
             } else if (t.status === 'Approved' && t.toBranch === currentUser.branchCode) {
               actionBtn = `<button class="action-btn bg-primary" onclick="processTransfer('${t._id}', 'arrive')">Konfirmasi Tiba</button>`;
             } else if (t.status === 'Arrived' && t.toBranch === currentUser.branchCode) {
-              const actionText = isSelf ? 'Selesaikan Penyewaan' : 'Kembalikan Kendaraan';
-              actionBtn = `<button class="action-btn bg-success" onclick="processTransfer('${t._id}', 'complete')">${actionText}</button>`;
+              if (isSelf) {
+                actionBtn = `<button class="action-btn bg-success" onclick="processTransfer('${t._id}', 'complete')">Selesaikan Penyewaan</button>`;
+              } else {
+                actionBtn = `<button class="action-btn bg-success" onclick="processTransfer('${t._id}', 'return')">Kembalikan Kendaraan</button>`;
+              }
+            } else if (t.status === 'Waiting Return' && t.fromBranch === currentUser.branchCode) {
+              actionBtn = `<button class="action-btn bg-success" onclick="processTransfer('${t._id}', 'complete')">Konfirmasi Pengembalian</button>`;
             }
+
+            // Selalu tambahkan tombol Detail
+            actionBtn = `<button class="action-btn" onclick="showTransferDetail('${t._id}')">Detail</button>` + actionBtn;
+
+            const vName = t.vehicleId ? `${t.vehicleId.brand || ''} ${t.vehicleId.model || ''}` : (t.vehicleName || '-');
+            const vPlate = t.vehicleId ? (t.vehicleId.plateNumber || '-') : (t.vehiclePlate || '-');
+            const startDateStr = t.startDate ? new Date(t.startDate).toLocaleDateString() : '-';
+            const durationStr = t.totalDays ? `${t.totalDays} hari` : '-';
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
               <td>${t.transferCode}</td>
               <td>Cabang ${t.fromBranch}</td>
+              <td>Cabang ${t.toBranch}</td>
               <td>Cabang ${t.rentalBranch}</td>
-              <td>${t.vehicleId?.brand || ''} ${t.vehicleId?.model || ''} (${t.vehicleId?.plateNumber || ''})</td>
+              <td>${vName}</td>
+              <td>${vPlate}</td>
+              <td>${startDateStr}</td>
+              <td>${durationStr}</td>
               <td><span class="badge-status bg-warning">${t.status}</span></td>
               <td><div style="display: flex; flex-wrap: nowrap; gap: 5px;">${actionBtn}</div></td>
             `;
@@ -970,7 +1193,8 @@
       const confirmMsg = action === 'approve' ? 'Setujui request ini?' : 
                          action === 'reject' ? 'Tolak request ini?' : 
                          action === 'arrive' ? 'Konfirmasi mobil telah tiba di cabang Anda?' :
-                         'Konfirmasi penyewaan telah selesai dan mobil dikembalikan?';
+                         action === 'return' ? 'Kembalikan kendaraan ke cabang asal?' :
+                         'Konfirmasi pengembalian kendaraan telah diterima?';
       if (!confirm(confirmMsg)) return;
 
       try {
