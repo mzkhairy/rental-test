@@ -107,12 +107,17 @@ Start-Sleep -Seconds 10
 
 if ($branchCode -eq "bks") {
     Write-Host "`n[*] Node Primary (Bekasi) Terdeteksi. Menginisiasi Replica Set rsRental (hanya Bekasi)..."
-    $initCmd = @"
+$initCmd = @"
 rs.initiate({
   _id: 'rsRental',
   members: [
     { _id: 0, host: '$($cfg['bks'].ip):$($cfg['bks'].port)' }
-  ]
+  ],
+  settings: {
+    electionTimeoutMillis: 30000,
+    heartbeatIntervalMillis: 5000,
+    heartbeatTimeoutSecs: 30
+  }
 })
 quit()
 "@
