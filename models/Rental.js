@@ -8,7 +8,7 @@ const rentalSchema = new mongoose.Schema({
   returnBranch: { type: String, required: true },
   handledBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Employee' },
   startDate: { type: Date, required: true },
-  expectedReturnDate: { type: Date, required: true },
+  expectedRentFinishDate: { type: Date, required: true },
   actualReturnDate: { type: Date },
   totalDays: { type: Number, required: true },
   totalPrice: { type: Number, required: true },

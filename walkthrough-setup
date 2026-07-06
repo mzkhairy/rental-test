@@ -1,0 +1,24 @@
+# Walkthrough: Setup Multi-Device P2P
+
+Semua konfigurasi untuk memfasilitasi pemindahan dari tes *localhost* ke *production* fisik (multi-device) sudah selesai saya siapkan secara menyeluruh!
+
+## 1. Script Otomatisasi: `setup_device.ps1`
+Saya telah membuat file bernama `setup_device.ps1` di folder utama aplikasi. Saat dijalankan (disarankan menggunakan Administrator), *script* ini akan menampilkan menu interaktif dan melakukan proses berikut secara otomatis:
+1. **Memilih Jaringan:** Meminta Anda memilih apakah device tersebut menggunakan ZeroTier (1) atau Local Switch (2).
+2. **Memilih Cabang:** Meminta Anda memilih cabang mana yang sedang di-setup (Bekasi, Bogor, dll).
+3. **Pembersihan Bersih:** Menghentikan proses `mongod` yang lama dan menghapus bersih folder `data/[cabang]` milik MongoDB untuk memastikan data mulai dari nol.
+4. **Pembuatan `.env` Otomatis:** Membaca file `.env.example` dan menyuntikkan IP (HOST_IP) serta URI MongoDB Replica Set yang utuh, sesuai dengan konfigurasi tabel jaringan yang Anda berikan. **(API Port sekarang menggunakan `4000` secara seragam untuk semua cabang)**.
+5. **Start `mongod`:** Menyalakan Mongo Server dengan flag `--bind_ip_all` (0.0.0.0) di *background*, berjalan pada *port* spesifik cabangnya.
+6. **Inisiasi Replica Set (Bekasi Saja):** Jika Anda memilih setup untuk Bekasi (Primary), *script* secara otomatis menjalankan perintah `rs.initiate` untuk mendaftarkan dan menghubungkan seluruh IP kelima cabang ke dalam satu Replica Set.
+7. **NPM & Seeding:** Menjalankan `npm install` dan meneruskan mode jaringan yang dipilih ke `seed.js`.
+
+## 2. Pembaruan Logika Seeding API (`seed.js`)
+Seperti yang saya peringatkan di *Implementation Plan*, komunikasi fitur "Sewa Lintas Cabang" tidak akan jalan apabila *seed* tabel `Branch` di dalam *database* masih di-*hardcode* ke IP `127.0.0.1`.
+Oleh karena itu, saya merombak *logic* di `seeders/seed.js`. Saat `setup_device.ps1` menjalankan `node seeders/seed.js`, ia menyuntikkan *environment* `NETWORK_MODE` ("zerotier" atau "switch"). 
+Dengan begitu, `seed.js` akan mengambil IP yang sesuai dari kamus konfigurasinya dan menyimpannya ke tabel `Branch`, memastikan API setiap Node.js berkomunikasi ke alamat mesin fisik yang benar!
+
+> [!TIP]
+> **Cara Pemakaian di Lapangan:**
+> 1. Nyalakan laptop/PC di cabang-cabang Secondary (Jakarta, Tangerang, Depok, Bogor).
+> 2. Jalankan `setup_device.ps1` pada keempat cabang Secondary tersebut dan biarkan menyala.
+> 3. Terakhir, nyalakan PC cabang Primary (Bekasi), jalankan `setup_device.ps1`. Begitu *script* di Bekasi mengeksekusi `rs.initiate`, semua perangkat cabang lain akan otomatis terhubung ke jaringan Replica Set secara ajaib!

@@ -20,14 +20,14 @@ router.get('/', requireAuth, async (req, res) => {
 
 router.post('/', requireAuth, async (req, res) => {
   try {
-    const { vehicleId, customerId, totalDays, totalPrice, startDate, expectedReturnDate, targetBranchCode } = req.body;
+    const { vehicleId, customerId, totalDays, totalPrice, startDate, expectedRentFinishDate, targetBranchCode } = req.body;
 
-    if (!startDate || !expectedReturnDate) {
+    if (!startDate || !expectedRentFinishDate) {
       return res.status(400).json({ message: 'Tanggal mulai dan selesai wajib diisi' });
     }
 
     const start = new Date(startDate);
-    const end = new Date(expectedReturnDate);
+    const end = new Date(expectedRentFinishDate);
 
     let vehicle = await Vehicle.findById(vehicleId);
     if (!vehicle && targetBranchCode) {
@@ -48,7 +48,7 @@ router.post('/', requireAuth, async (req, res) => {
       vehicleId,
       status: { $in: ['Pending', 'Waiting Transfer', 'Pending Payment', 'Active'] },
       $or: [
-        { startDate: { $lte: end }, expectedReturnDate: { $gte: start } }
+        { startDate: { $lte: end }, expectedRentFinishDate: { $gte: start } }
       ]
     });
 
@@ -65,7 +65,7 @@ router.post('/', requireAuth, async (req, res) => {
       totalDays,
       totalPrice,
       startDate: start,
-      expectedReturnDate: end,
+      expectedRentFinishDate: end,
       handledBy: req.session.userId,
       pickupBranch: req.body.pickupBranch || process.env.BRANCH_CODE,
       returnBranch: req.body.pickupBranch || process.env.BRANCH_CODE,
@@ -98,15 +98,14 @@ router.put('/:id', requireAuth, async (req, res) => {
       return res.status(400).json({ message: 'Hanya penyewaan dengan status Pending Payment yang dapat diedit' });
     }
 
-    const { vehicleId, customerId, totalDays, totalPrice, startDate, expectedReturnDate, targetBranchCode } = req.body;
+    const { vehicleId, customerId, totalDays, totalPrice, startDate, expectedRentFinishDate, targetBranchCode } = req.body;
 
-    if (!startDate || !expectedReturnDate) {
+    if (!startDate || !expectedRentFinishDate) {
       return res.status(400).json({ message: 'Tanggal mulai dan selesai wajib diisi' });
     }
 
     const isCrossBranch = targetBranchCode && targetBranchCode !== process.env.BRANCH_CODE;
     
-    // Check if vehicle changed
     if (rental.vehicleId.toString() !== vehicleId) {
       // Free old vehicle if it was local
       if (!rental.isCrossBranch) {
@@ -121,14 +120,12 @@ router.put('/:id', requireAuth, async (req, res) => {
           await vLocal.save();
         }
       }
-    } else {
-      // Vehicle did not change, but branch type might have changed? (e.g. from cross-branch to local for the SAME vehicle? That doesn't make sense since cross-branch vehicles don't exist in local DB. So if vehicleId is same, isCrossBranch is same).
     }
 
     rental.vehicleId = vehicleId;
     rental.customerId = customerId;
     rental.startDate = new Date(startDate);
-    rental.expectedReturnDate = new Date(expectedReturnDate);
+    rental.expectedRentFinishDate = new Date(expectedRentFinishDate);
     rental.totalDays = totalDays;
     rental.totalPrice = totalPrice;
     rental.isCrossBranch = isCrossBranch;

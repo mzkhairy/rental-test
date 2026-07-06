@@ -7,6 +7,7 @@ const transferSchema = new mongoose.Schema({
   vehiclePlate: { type: String },
   startDate: { type: Date },
   totalDays: { type: Number },
+  expectedRentFinishDate: { type: Date },
   rentalBranch: { type: String },
   fromBranch: { type: String, required: true },
   toBranch: { type: String, required: true },

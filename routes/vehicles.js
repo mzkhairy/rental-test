@@ -2,15 +2,77 @@ const express = require('express');
 const router = express.Router();
 const Vehicle = require('../models/Vehicle');
 const requireAuth = require('../middleware/requireAuth');
+const Rental = require('../models/Rental');
+const Transfer = require('../models/Transfer');
+
+async function getAvailableVehicles(query, startDate, endDate) {
+  let vehicles = await Vehicle.find(query);
+
+  if (startDate && endDate) {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    vehicles = vehicles.filter(v => v.status !== 'Maintenance');
+
+    const overlappingRentals = await Rental.find({
+      status: { $in: ['Pending', 'Waiting Transfer', 'Pending Payment', 'Active'] },
+      $or: [
+        { startDate: { $lte: end }, expectedRentFinishDate: { $gte: start } }
+      ]
+    }).select('vehicleId');
+    const bookedLocalIds = overlappingRentals.map(r => r.vehicleId.toString());
+
+    const overlappingTransfers = await Transfer.find({
+      fromBranch: process.env.BRANCH_CODE,
+      status: { $in: ['Requested', 'Approved', 'In Transit', 'Arrived', 'Waiting Return'] },
+      $or: [
+        { startDate: { $lte: end }, expectedRentFinishDate: { $gte: start } }
+      ]
+    }).select('vehicleId');
+    const bookedTransferIds = overlappingTransfers.map(t => t.vehicleId.toString());
+
+    const allBookedIds = new Set([...bookedLocalIds, ...bookedTransferIds]);
+
+    vehicles = vehicles.filter(v => !allBookedIds.has(v._id.toString()));
+  }
+
+  return vehicles;
+}
 
 // GET /api/vehicles
 router.get('/', requireAuth, async (req, res) => {
   try {
     // Ambil mobil yang sedang berada di cabang ini
     let query = { currentBranch: process.env.BRANCH_CODE };
-    if (req.query.status) query.status = req.query.status;
-    const vehicles = await Vehicle.find(query);
-    res.json(vehicles);
+    if (req.query.status && !req.query.startDate) {
+      query.status = req.query.status;
+    }
+    const vehicles = await getAvailableVehicles(query, req.query.startDate, req.query.endDate);
+    
+    const enhancedVehicles = await Promise.all(vehicles.map(async (v) => {
+      const vObj = v.toObject ? v.toObject() : v;
+      if (['Booked', 'Rented', 'Rented by request', 'Transfer'].includes(vObj.status)) {
+        const activeRental = await Rental.findOne({ 
+          vehicleId: vObj._id, 
+          status: { $in: ['Pending', 'Waiting Transfer', 'Pending Payment', 'Active'] }
+        }).sort({ expectedRentFinishDate: -1 });
+
+        if (activeRental) {
+          vObj.expectedRentFinishDate = activeRental.expectedRentFinishDate;
+        } else {
+          const activeTransfer = await Transfer.findOne({
+             vehicleId: vObj._id,
+             status: { $in: ['Requested', 'Approved', 'In Transit', 'Arrived', 'Waiting Return'] }
+          }).sort({ expectedRentFinishDate: -1 });
+          if (activeTransfer) {
+             vObj.expectedRentFinishDate = activeTransfer.expectedRentFinishDate;
+          }
+        }
+      }
+      return vObj;
+    }));
+    
+    res.json(enhancedVehicles);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -20,17 +82,43 @@ router.get('/', requireAuth, async (req, res) => {
 // Tidak menggunakan requireAuth agar cabang lain bisa langsung memanggilnya
 router.get('/available', async (req, res) => {
   try {
-    const { brand, model } = req.query;
+    const { brand, model, startDate, endDate } = req.query;
     let query = {
-      currentBranch: process.env.BRANCH_CODE,
-      status: 'Available'
+      currentBranch: process.env.BRANCH_CODE
     };
+    if (!startDate) {
+      query.status = 'Available';
+    }
 
     if (brand) query.brand = new RegExp(brand, 'i');
     if (model) query.model = new RegExp(model, 'i');
 
-    const vehicles = await Vehicle.find(query);
-    res.json({ branchCode: process.env.BRANCH_CODE, vehicles });
+    const vehicles = await getAvailableVehicles(query, startDate, endDate);
+    
+    const enhancedVehicles = await Promise.all(vehicles.map(async (v) => {
+      const vObj = v.toObject ? v.toObject() : v;
+      if (['Booked', 'Rented', 'Rented by request', 'Transfer'].includes(vObj.status)) {
+        const activeRental = await Rental.findOne({ 
+          vehicleId: vObj._id, 
+          status: { $in: ['Pending', 'Waiting Transfer', 'Pending Payment', 'Active'] }
+        }).sort({ expectedRentFinishDate: -1 });
+
+        if (activeRental) {
+          vObj.expectedRentFinishDate = activeRental.expectedRentFinishDate;
+        } else {
+          const activeTransfer = await Transfer.findOne({
+             vehicleId: vObj._id,
+             status: { $in: ['Requested', 'Approved', 'In Transit', 'Arrived', 'Waiting Return'] }
+          }).sort({ expectedRentFinishDate: -1 });
+          if (activeTransfer) {
+             vObj.expectedRentFinishDate = activeTransfer.expectedRentFinishDate;
+          }
+        }
+      }
+      return vObj;
+    }));
+    
+    res.json({ branchCode: process.env.BRANCH_CODE, vehicles: enhancedVehicles });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

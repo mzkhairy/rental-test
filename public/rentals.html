@@ -510,7 +510,7 @@
         let matchDate = true;
         if (startDateFilter || endDateFilter) {
           const start = new Date(r.startDate).getTime();
-          const end = new Date(r.expectedReturnDate).getTime();
+          const end = new Date(r.expectedRentFinishDate).getTime();
 
           if (startDateFilter) {
             if (end < new Date(startDateFilter).getTime()) matchDate = false;
@@ -632,7 +632,7 @@
         vSelect.innerHTML = '<option value="">Memuat kendaraan (Lokal)...</option>';
         vSelect.disabled = true;
 
-        let localVehs = await apiFetch(`/api/vehicles?status=Available&startDate=${start.toISOString()}&endDate=${end.toISOString()}`);
+        let localVehs = await apiFetch(`/api/vehicles?startDate=${start.toISOString()}&endDate=${end.toISOString()}`);
         vehicles = localVehs;
 
         vSelect.innerHTML = '<option value="">Pilih Kendaraan...</option>';
@@ -640,7 +640,16 @@
           vSelect.innerHTML = '<option value="">Tidak ada kendaraan lokal tersedia</option>';
         } else {
           vehicles.forEach(v => {
-            vSelect.innerHTML += `<option value="${v._id}">${v.brand} ${v.model} - ${v.plateNumber} (Rp ${v.dailyRate}/hr)</option>`;
+            let statusLabel = '';
+            if (v.status !== 'Available') {
+              if (v.expectedRentFinishDate) {
+                const d = new Date(v.expectedRentFinishDate);
+                statusLabel = ` (Saat ini ${v.status} sampai ${d.getDate().toString().padStart(2,'0')}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getFullYear()})`;
+              } else {
+                statusLabel = ` (Saat ini ${v.status})`;
+              }
+            }
+            vSelect.innerHTML += `<option value="${v._id}">${v.brand} ${v.model} - ${v.plateNumber} (Rp ${v.dailyRate}/hr)${statusLabel}</option>`;
           });
           vSelect.disabled = false;
         }
@@ -686,7 +695,7 @@
       const totalPrice = v.dailyRate * totalDays;
 
       const startDate = new Date(startVal);
-      const expectedReturnDate = new Date(startDate.getTime() + totalDays * 24 * 60 * 60 * 1000);
+      const expectedRentFinishDate = new Date(startDate.getTime() + totalDays * 24 * 60 * 60 * 1000);
 
       const vSelect = document.getElementById('vehicleId');
       const selectedOption = vSelect.options[vSelect.selectedIndex];
@@ -699,7 +708,7 @@
             rentalCode: 'RNT-' + Date.now(),
             vehicleId, customerId, totalDays, totalPrice,
             startDate: startDate.toISOString(),
-            expectedReturnDate: expectedReturnDate.toISOString(),
+            expectedRentFinishDate: expectedRentFinishDate.toISOString(),
             targetBranchCode
           })
         });
@@ -784,7 +793,7 @@
             if (data.vehicles) fetchedVehs = data.vehicles;
           }
         } else {
-          fetchedVehs = await apiFetch(`/api/vehicles?status=Available&startDate=${start.toISOString()}&endDate=${end.toISOString()}`);
+          fetchedVehs = await apiFetch(`/api/vehicles?startDate=${start.toISOString()}&endDate=${end.toISOString()}`);
         }
 
         editVehicles = fetchedVehs;
@@ -813,7 +822,16 @@
         } else {
           editVehicles.forEach(v => {
             const isSelected = (originalVehicleId === v._id) ? 'selected' : '';
-            vSelect.innerHTML += `<option value="${v._id}" ${isSelected}>${v.brand} ${v.model} - ${v.plateNumber} (Rp ${v.dailyRate}/hr)</option>`;
+            let statusLabel = '';
+            if (v.status !== 'Available') {
+              if (v.expectedRentFinishDate) {
+                const d = new Date(v.expectedRentFinishDate);
+                statusLabel = ` (Saat ini ${v.status} sampai ${d.getDate().toString().padStart(2,'0')}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getFullYear()})`;
+              } else {
+                statusLabel = ` (Saat ini ${v.status})`;
+              }
+            }
+            vSelect.innerHTML += `<option value="${v._id}" ${isSelected}>${v.brand} ${v.model} - ${v.plateNumber} (Rp ${v.dailyRate}/hr)${statusLabel}</option>`;
           });
           vSelect.disabled = false;
         }
@@ -838,7 +856,7 @@
       const totalPrice = v.dailyRate * totalDays;
 
       const startDate = new Date(startVal);
-      const expectedReturnDate = new Date(startDate.getTime() + totalDays * 24 * 60 * 60 * 1000);
+      const expectedRentFinishDate = new Date(startDate.getTime() + totalDays * 24 * 60 * 60 * 1000);
 
       try {
         await apiFetch(`/api/rentals/${id}`, {
@@ -846,7 +864,7 @@
           body: JSON.stringify({
             vehicleId, customerId, totalDays, totalPrice,
             startDate: startDate.toISOString(),
-            expectedReturnDate: expectedReturnDate.toISOString(),
+            expectedRentFinishDate: expectedRentFinishDate.toISOString(),
             targetBranchCode,
             pickupBranch
           })
@@ -941,6 +959,14 @@
                            <button class="action-btn" onclick="showVehicleDetail('${v._id}')">Detail</button>`;
 
             let ketHtml = '<span class="badge-status bg-success">Tersedia</span>';
+            if (v.status !== 'Available') {
+              if (v.expectedRentFinishDate) {
+                const d = new Date(v.expectedRentFinishDate);
+                ketHtml += `<br><small style="color:var(--text-muted);">(Saat ini ${v.status} sp. ${d.getDate().toString().padStart(2,'0')}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getFullYear()})</small>`;
+              } else {
+                ketHtml += `<br><small style="color:var(--text-muted);">(Saat ini ${v.status})</small>`;
+              }
+            }
 
             if (existingReq) {
               if (existingReq.status === 'Pending Payment') {
@@ -1023,7 +1049,7 @@
       const pickupBranch = document.querySelector('input[name="pickupBranchRadio"]:checked').value;
 
       const startDate = new Date(startVal);
-      const expectedReturnDate = new Date(startDate.getTime() + totalDays * 24 * 60 * 60 * 1000);
+      const expectedRentFinishDate = new Date(startDate.getTime() + totalDays * 24 * 60 * 60 * 1000);
       const totalPrice = dailyRate * totalDays;
 
       try {
@@ -1033,7 +1059,7 @@
             rentalCode: 'RNT-' + Date.now(),
             vehicleId, customerId, totalDays, totalPrice,
             startDate: startDate.toISOString(),
-            expectedReturnDate: expectedReturnDate.toISOString(),
+            expectedRentFinishDate: expectedRentFinishDate.toISOString(),
             targetBranchCode, // This is the ownerBranch
             pickupBranch
           })

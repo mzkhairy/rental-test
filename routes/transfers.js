@@ -177,6 +177,7 @@ router.post('/incoming-request', async (req, res) => {
       vehiclePlate: vehiclePlate || (v ? v.plateNumber : undefined),
       startDate,
       totalDays,
+      expectedRentFinishDate: startDate && totalDays ? new Date(new Date(startDate).getTime() + totalDays * 24 * 60 * 60 * 1000) : undefined,
       requestedBy,
       notes,
       status: status || 'Requested'
@@ -184,10 +185,7 @@ router.post('/incoming-request', async (req, res) => {
 
     await transfer.save();
     
-    if (v && ownerBranch === process.env.BRANCH_CODE) {
-      v.status = 'Booked';
-      await v.save();
-    }
+    // Removed v.status = 'Booked'
 
     let title = 'Request Kendaraan';
     let message = `Cabang ${rentalBranch} telah membayar sewa untuk kendaraan ${v ? v.brand + ' ' + v.model : 'Anda'}.`;
