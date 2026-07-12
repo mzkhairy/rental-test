@@ -57,34 +57,36 @@ Dokumen ini berisi daftar lengkap status pada *collections* utama, skenario peng
 ### Skenario 2: Lintas Cabang - Sama Tempat Pengambilan & Pengembalian (Customer di A, Pinjam dari B, Kembali di A)
 1. **Buat Request**: Cabang A me-request mobil dari Cabang B.
    - Rental Status (di A): `Pending Payment`
-   - Transfer Status (di A & B): `Requested`
-   - Vehicle Status (di B): `Reserved`
 2. **Konfirmasi Pembayaran**: Cabang A menerima uang, lalu mengeklik "Konfirmasi Payment".
    - Rental Status (di A): `Waiting Transfer`
-   - Transfer Status (di A & B): `Approved` (otomatis disinkronisasi)
-3. **Mobil Tiba**: Cabang A mengeklik "Konfirmasi Tiba" (Sub Menu Request).
+   - Transfer Status (di A & B): `Requested`
+3. **Konfirmasi dari Cabang B**: Cabang B Approve request dari cabang A.
+   - Transfer Status (di A & B): `Approved`
+   - Vehicle Status (di B): `Transfer`
+   - Rental Status (di A): `Waiting Transfer`
+4. **Mobil Tiba**: Cabang A mengeklik "Konfirmasi Tiba" (Sub Menu Request).
    - Transfer Status: `Arrived`
-   - Rental Status (di A): `Waiting Handover`
+   - Rental Status (di A): `Waiting Handover` menunggu diserahkan ke customer
    - Vehicle Status (di B): `Reserved`
-4. **Mulai Penyewaan**: Pelanggan datang ke Cabang A, Admin A mengeklik "Mulai Penyewaan" (Sub Menu Request).
+5. **Mulai Penyewaan**: Pelanggan datang ke Cabang A, Mobil diserahkan dan Admin A mengeklik "Mulai Penyewaan" (Sub Menu Request).
    - Transfer Status: `Started`
    - Rental Status (di A): `Active`
    - Vehicle Status (di B): `Rented by Request`
-5. **Penyewaan Selesai (Oleh Pelanggan)**: Pelanggan mengembalikan ke Cabang A, Admin A mengeklik "Selesaikan Penyewaan" (Sub Menu Request).
+6. **Penyewaan Selesai (Oleh Pelanggan)**: Pelanggan mengembalikan kendaraan ke Cabang A, Admin A mengeklik "Selesaikan Penyewaan" (Sub Menu Request).
    - Transfer Status: `Rent Finished`
    - Rental Status (di A): `Completed`
-6. **Kembalikan Mobil (Oleh Cabang)**: Cabang A memulangkan mobil ke Cabang B, Admin A mengeklik "Kembalikan Kendaraan".
+7. **Kembalikan Mobil (Oleh Cabang)**: Cabang A memulangkan mobil ke Cabang B, Admin A mengeklik "Kembalikan Kendaraan".
    - Transfer Status: `Waiting Return`
-7. **Mobil Sampai di Pemilik**: Cabang B mengeklik "Konfirmasi Pengembalian" (Sub Menu Request).
+8. **Mobil Sampai di Pemilik**: Cabang B mengeklik "Konfirmasi Pengembalian" (Sub Menu Request).
    - Transfer Status: `Completed`
    - Vehicle Status (di B): `Available`
 
 ### Skenario 3: Lintas Cabang Kompleks (Customer booking di A, ambil mobil pemilik B di cabang C)
 > *Catatan: Sistem RentSync memungkinkan skenario Request `toBranch` yang berbeda dengan `rentalBranch`.*
 1. **Buat Request**: Cabang A me-request mobil Cabang B untuk diambil pelanggan di Cabang C.
-   - Transfer Status: `Requested` (`fromBranch: B`, `rentalBranch: A`, `toBranch: C`)
    - Rental Status (di A): `Pending Payment`
 2. **Konfirmasi Pembayaran**: Cabang A mengeklik "Konfirmasi Payment".
+   - Transfer Status: `Requested` (`fromBranch: B`, `rentalBranch: A`, `toBranch: C`)
    - Transfer Status: `Approved`
    - Rental Status (di A): `Waiting Transfer`
 3. **Mobil Tiba**: Cabang C mengeklik "Konfirmasi Tiba".
