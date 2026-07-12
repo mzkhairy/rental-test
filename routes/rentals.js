@@ -265,11 +265,50 @@ router.post('/:id/arrive', requireAuth, async (req, res) => {
       }
     }
 
-    rental.status = 'Active';
+    rental.status = 'Waiting Handover';
     await rental.save();
 
     // Update customer isRenting status if needed
     await Customer.findByIdAndUpdate(rental.customerId, { isRenting: true });
+
+    res.json(rental);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+router.post('/:id/start', requireAuth, async (req, res) => {
+  try {
+    const rental = await Rental.findById(req.params.id);
+    if (!rental || rental.status !== 'Waiting Handover') {
+      return res.status(400).json({ message: 'Status tidak valid atau belum tiba' });
+    }
+
+    rental.status = 'Active';
+    await rental.save();
+
+    if (rental.transferId) {
+      const transfer = await Transfer.findById(rental.transferId);
+      if (transfer) {
+        transfer.status = 'Started';
+        await transfer.save();
+        
+        const ownerBranch = await Branch.findOne({ branchCode: transfer.fromBranch });
+        if (ownerBranch) {
+          axios.post(`http://${ownerBranch.host}:${ownerBranch.apiPort}/api/transfers/sync-status`, {
+            transferCode: transfer.transferCode,
+            status: 'Started',
+            branchName: process.env.BRANCH_CODE
+          }).catch(e => console.error(e));
+        }
+      }
+    } else {
+      const vehicle = await Vehicle.findById(rental.vehicleId);
+      if (vehicle) {
+        vehicle.status = 'Rented';
+        await vehicle.save();
+      }
+    }
 
     res.json(rental);
   } catch (err) {

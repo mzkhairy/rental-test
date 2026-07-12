@@ -18,7 +18,7 @@ const transferSchema = new mongoose.Schema({
   arrivalDate: { type: Date },
   status: { 
     type: String, 
-    enum: ['Requested', 'Approved', 'Rejected', 'In Transit', 'Arrived', 'Cancelled', 'Completed', 'Waiting Return'],
+    enum: ['Requested', 'Approved', 'Rejected', 'Arrived', 'Started', 'Rent Finished', 'Cancelled', 'Completed', 'Waiting Return'],
     default: 'Requested'
   },
   notes: { type: String }

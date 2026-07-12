@@ -557,6 +557,8 @@
           actionBtn += `<button class="action-btn bg-warning" onclick="openEditRentalModal('${r._id}')">Edit</button>`;
           actionBtn += `<button class="action-btn bg-success" onclick="confirmPayment('${r._id}')">Konfirmasi Payment</button>`;
           actionBtn += `<button class="action-btn reject" onclick="cancelRental('${r._id}')">Batal</button>`;
+        } else if (r.status === 'Waiting Handover') {
+          // Tombol Mulai Penyewaan dipindah ke sub menu Request sesuai instruksi
         } else if (r.status === 'Active') {
           // Sembunyikan jika lintas cabang karena akan dieksekusi di tab Requests
           if (!r.isCrossBranch) {
@@ -1116,10 +1118,17 @@
     }
 
     async function confirmArrival(rentalId) {
-      if (!confirm('Konfirmasi mobil pesanan ini telah tiba di cabang Anda?')) return;
+      if(!confirm('Konfirmasi kendaraan telah tiba di cabang ini?')) return;
       try {
         await apiFetch(`/api/rentals/${rentalId}/arrive`, { method: 'POST' });
-        alert('Kendaraan telah tiba! Customer bisa mulai membayar.');
+        loadData();
+      } catch (err) { alert(err.message); }
+    }
+
+    async function startRental(rentalId) {
+      if(!confirm('Konfirmasi penyerahan kendaraan kepada pelanggan?')) return;
+      try {
+        await apiFetch(`/api/rentals/${rentalId}/start`, { method: 'POST' });
         loadData();
       } catch (err) { alert(err.message); }
     }
@@ -1163,8 +1172,12 @@
             } else if (t.status === 'Approved' && t.toBranch === currentUser.branchCode) {
               actionBtn = `<button class="action-btn bg-primary" onclick="processTransfer('${t._id}', 'arrive')">Konfirmasi Tiba</button>`;
             } else if (t.status === 'Arrived' && t.toBranch === currentUser.branchCode) {
+              actionBtn = `<button class="action-btn bg-success" onclick="processTransfer('${t._id}', 'start')">Mulai Penyewaan</button>`;
+            } else if (t.status === 'Started' && t.toBranch === currentUser.branchCode) {
+              actionBtn = `<button class="action-btn bg-success" onclick="processTransfer('${t._id}', 'finish-rent')">Selesaikan Penyewaan</button>`;
+            } else if (t.status === 'Rent Finished' && t.toBranch === currentUser.branchCode) {
               if (isSelf) {
-                actionBtn = `<button class="action-btn bg-success" onclick="processTransfer('${t._id}', 'complete')">Selesaikan Penyewaan</button>`;
+                actionBtn = `<button class="action-btn bg-success" onclick="processTransfer('${t._id}', 'complete')">Selesaikan Tiket Request</button>`;
               } else {
                 actionBtn = `<button class="action-btn bg-success" onclick="processTransfer('${t._id}', 'return')">Kembalikan Kendaraan</button>`;
               }
@@ -1224,8 +1237,10 @@
       const confirmMsg = action === 'approve' ? 'Setujui request ini?' : 
                          action === 'reject' ? 'Tolak request ini?' : 
                          action === 'arrive' ? 'Konfirmasi mobil telah tiba di cabang Anda?' :
+                         action === 'start' ? 'Konfirmasi penyerahan kendaraan kepada pelanggan (Mulai Penyewaan)?' :
+                         action === 'finish-rent' ? 'Konfirmasi pelanggan telah mengembalikan kendaraan (Selesaikan Penyewaan)?' :
                          action === 'return' ? 'Kembalikan kendaraan ke cabang asal?' :
-                         'Konfirmasi pengembalian kendaraan telah diterima?';
+                         'Konfirmasi penyelesaian request ini?';
       if (!confirm(confirmMsg)) return;
 
       try {

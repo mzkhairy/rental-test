@@ -89,10 +89,19 @@ router.post('/sync-status', async (req, res) => {
          }
       } else if (status === 'Arrived') {
          if (transfer.rentalBranch === process.env.BRANCH_CODE) {
-           await Rental.findOneAndUpdate({ transferId: transfer._id }, { status: 'Active' });
+           await Rental.findOneAndUpdate({ transferId: transfer._id }, { status: 'Waiting Handover' });
          }
          if (transfer.fromBranch === process.env.BRANCH_CODE) {
+           await Vehicle.findByIdAndUpdate(transfer.vehicleId, { status: 'Reserved' });
+         }
+      } else if (status === 'Started') {
+         if (transfer.fromBranch === process.env.BRANCH_CODE) {
            await Vehicle.findByIdAndUpdate(transfer.vehicleId, { status: 'Rented by Request' });
+         }
+      } else if (status === 'Rent Finished') {
+         if (transfer.rentalBranch === process.env.BRANCH_CODE) {
+           const r = await Rental.findOneAndUpdate({ transferId: transfer._id }, { status: 'Completed', actualReturnDate: new Date() });
+           if (r) await Customer.findByIdAndUpdate(r.customerId, { isRenting: false });
          }
       } else if (status === 'Waiting Return') {
          if (transfer.rentalBranch === process.env.BRANCH_CODE) {
@@ -137,6 +146,14 @@ router.post('/sync-status', async (req, res) => {
     } else if (status === 'Completed') {
       title = 'Pengembalian Dikonfirmasi';
       message = `Cabang ${branchName || 'lain'} telah mengkonfirmasi pengembalian kendaraan.`;
+      link = '/rentals.html';
+    } else if (status === 'Started') {
+      title = 'Penyewaan Dimulai';
+      message = `Cabang ${branchName || 'lain'} telah menyerahkan kendaraan ke pelanggan.`;
+      link = '/rentals.html';
+    } else if (status === 'Rent Finished') {
+      title = 'Penyewaan Selesai';
+      message = `Pelanggan telah mengembalikan kendaraan ke Cabang ${branchName || 'lain'}.`;
       link = '/rentals.html';
     }
 
@@ -302,10 +319,10 @@ router.post('/:id/arrive', requireAuth, async (req, res) => {
     await transfer.save();
 
     if (transfer.rentalBranch === process.env.BRANCH_CODE) {
-      await Rental.findOneAndUpdate({ transferId: transfer._id }, { status: 'Active' });
+      await Rental.findOneAndUpdate({ transferId: transfer._id }, { status: 'Waiting Handover' });
     }
     if (transfer.fromBranch === process.env.BRANCH_CODE) {
-      await Vehicle.findByIdAndUpdate(transfer.vehicleId, { status: 'Rented by Request' });
+      await Vehicle.findByIdAndUpdate(transfer.vehicleId, { status: 'Reserved' });
     }
 
     // Ping sync-status to rentalBranch and ownerBranch
@@ -331,12 +348,91 @@ router.post('/:id/arrive', requireAuth, async (req, res) => {
   }
 });
 
+// Mulai Penyewaan (Konfirmasi penyerahan ke customer, dipanggil dari frontend cabang tujuan/pengambil)
+router.post('/:id/start', requireAuth, async (req, res) => {
+  try {
+    const transfer = await Transfer.findById(req.params.id);
+    if (!transfer || transfer.status !== 'Arrived') {
+      return res.status(400).json({ message: 'Status tidak valid atau mobil belum tiba' });
+    }
+
+    transfer.status = 'Started';
+    await transfer.save();
+
+    if (transfer.rentalBranch === process.env.BRANCH_CODE) {
+      await Rental.findOneAndUpdate({ transferId: transfer._id }, { status: 'Active' });
+    }
+    if (transfer.fromBranch === process.env.BRANCH_CODE) {
+      await Vehicle.findByIdAndUpdate(transfer.vehicleId, { status: 'Rented by Request' });
+    }
+
+    // Ping sync-status to rentalBranch and ownerBranch
+    const branchesToNotify = new Set([transfer.rentalBranch, transfer.fromBranch, transfer.toBranch]);
+    branchesToNotify.delete(process.env.BRANCH_CODE); 
+
+    for (const bCode of branchesToNotify) {
+      if (bCode) {
+        const b = await Branch.findOne({ branchCode: bCode });
+        if (b) {
+          axios.post(`http://${b.host}:${b.apiPort}/api/transfers/sync-status`, {
+            transferCode: transfer.transferCode,
+            status: 'Started',
+            branchName: process.env.BRANCH_CODE
+          }).catch(e => console.error("Gagal sync status started ke", bCode, e.message));
+        }
+      }
+    }
+
+    res.json(transfer);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+// Selesaikan Penyewaan (Customer mengembalikan mobil, tapi mobil masih di cabang tujuan)
+router.post('/:id/finish-rent', requireAuth, async (req, res) => {
+  try {
+    const transfer = await Transfer.findById(req.params.id);
+    if (!transfer || transfer.status !== 'Started') {
+      return res.status(400).json({ message: 'Penyewaan belum dimulai atau status tidak valid' });
+    }
+
+    transfer.status = 'Rent Finished';
+    await transfer.save();
+
+    if (transfer.rentalBranch === process.env.BRANCH_CODE) {
+      const r = await Rental.findOneAndUpdate({ transferId: transfer._id }, { status: 'Completed', actualReturnDate: new Date() });
+      if (r) await Customer.findByIdAndUpdate(r.customerId, { isRenting: false });
+    }
+
+    const branchesToNotify = new Set([transfer.rentalBranch, transfer.fromBranch, transfer.toBranch]);
+    branchesToNotify.delete(process.env.BRANCH_CODE); 
+
+    for (const bCode of branchesToNotify) {
+      if (bCode) {
+        const b = await Branch.findOne({ branchCode: bCode });
+        if (b) {
+          axios.post(`http://${b.host}:${b.apiPort}/api/transfers/sync-status`, {
+            transferCode: transfer.transferCode,
+            status: 'Rent Finished',
+            branchName: process.env.BRANCH_CODE
+          }).catch(e => console.error("Gagal sync status rent finished ke", bCode, e.message));
+        }
+      }
+    }
+
+    res.json(transfer);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
 // Cabang peminta mengembalikan kendaraan (kemudian menunggu konfirmasi dari pemilik)
 router.post('/:id/return', requireAuth, async (req, res) => {
   try {
     const transfer = await Transfer.findById(req.params.id);
-    if (!transfer || transfer.status !== 'Arrived') {
-      return res.status(400).json({ message: 'Status mobil belum tiba atau sudah selesai' });
+    if (!transfer || transfer.status !== 'Rent Finished') {
+      return res.status(400).json({ message: 'Status mobil belum selesai disewa' });
     }
 
     transfer.status = 'Waiting Return';
@@ -378,12 +474,12 @@ router.post('/:id/complete', requireAuth, async (req, res) => {
     }
     
     // Jika bukan isSelf, status harus Waiting Return
-    // Jika isSelf, boleh langsung dari Arrived
+    // Jika isSelf, boleh langsung dari Rent Finished
     if (!isSelf && transfer.status !== 'Waiting Return') {
       return res.status(400).json({ message: 'Status mobil bukan sedang dikembalikan' });
     }
-    if (isSelf && transfer.status !== 'Arrived' && transfer.status !== 'Waiting Return') {
-      return res.status(400).json({ message: 'Status mobil belum tiba' });
+    if (isSelf && transfer.status !== 'Rent Finished' && transfer.status !== 'Waiting Return') {
+      return res.status(400).json({ message: 'Status mobil belum selesai disewa' });
     }
 
     transfer.status = 'Completed';

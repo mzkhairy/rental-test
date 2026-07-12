@@ -18,7 +18,7 @@ const rentalSchema = new mongoose.Schema({
   transferId: { type: mongoose.Schema.Types.ObjectId, ref: 'Transfer' },
   status: { 
     type: String, 
-    enum: ['Pending', 'Waiting Transfer', 'Pending Payment', 'Active', 'Completed', 'Cancelled', 'Waiting Return'],
+    enum: ['Pending', 'Waiting Transfer', 'Pending Payment', 'Waiting Handover', 'Active', 'Completed', 'Cancelled', 'Waiting Return'],
     default: 'Pending Payment'
   }
 }, { timestamps: true });
