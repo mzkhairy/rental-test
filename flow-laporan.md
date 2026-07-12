@@ -81,30 +81,6 @@ Dokumen ini berisi daftar lengkap status pada *collections* utama, skenario peng
    - Transfer Status: `Completed`
    - Vehicle Status (di B): `Available`
 
-### Skenario 3: Lintas Cabang Kompleks (Customer booking di A, ambil mobil pemilik B di cabang C)
-> *Catatan: Sistem RentSync memungkinkan skenario Request `toBranch` yang berbeda dengan `rentalBranch`.*
-1. **Buat Request**: Cabang A me-request mobil Cabang B untuk diambil pelanggan di Cabang C.
-   - Rental Status (di A): `Pending Payment`
-2. **Konfirmasi Pembayaran**: Cabang A mengeklik "Konfirmasi Payment".
-   - Transfer Status: `Requested` (`fromBranch: B`, `rentalBranch: A`, `toBranch: C`)
-   - Transfer Status: `Approved`
-   - Rental Status (di A): `Waiting Transfer`
-3. **Mobil Tiba**: Cabang C mengeklik "Konfirmasi Tiba".
-   - Transfer Status: `Arrived`
-   - Rental Status (di A): `Waiting Handover`
-4. **Mulai Penyewaan**: Cabang C mengeklik "Mulai Penyewaan".
-   - Transfer Status: `Started`
-   - Rental Status (di A): `Active`
-   - Vehicle Status (di B): `Rented by Request`
-5. **Penyewaan Selesai**: Pelanggan memulangkan ke Cabang C, Admin C mengeklik "Selesaikan Penyewaan".
-   - Transfer Status: `Rent Finished`
-   - Rental Status (di A): `Completed`
-6. **Kembalikan Mobil**: Cabang C mengeklik "Kembalikan Kendaraan".
-   - Transfer Status: `Waiting Return`
-7. **Mobil Sampai di Pemilik**: Cabang B mengeklik "Konfirmasi Pengembalian".
-   - Transfer Status: `Completed`
-   - Vehicle Status (di B): `Available`
-
 ---
 
 ## 3. Struktur Database & Deskripsi Field
