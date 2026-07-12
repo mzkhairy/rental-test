@@ -9,11 +9,11 @@ Berikut adalah 7 (tujuh) bentuk form operasional beserta fungsi dan elemen (fiel
 ---
 
 ## 1. Form Login (`login.html`)
-Form pertama yang menjadi gerbang utama keamanan aplikasi. Pegawai harus memiliki akun untuk bisa mengakses *dashboard* manajemen penyewaan.
+Form pertama yang menjadi gerbang utama keamanan aplikasi. Karyawan harus memiliki akun untuk bisa mengakses *dashboard* manajemen penyewaan.
 - **Fungsi:** Autentikasi dan identifikasi peran (Admin/Supir) serta penetapan identitas cabang asal bagi pengguna.
 - **Input Fields:**
-  - **ID Pegawai / Email**: *(Text/Email)* Identitas pegawai terdaftar.
-  - **Password**: *(Password)* Kata sandi unik milik pegawai.
+  - **ID Karyawan / Email**: *(Text/Email)* Identitas Karyawan terdaftar.
+  - **Password**: *(Password)* Kata sandi unik milik Karyawan.
 
 ## 2. Form Kelola Pelanggan (`customers.html`)
 Form dinamis yang muncul di dalam modal untuk mendaftarkan penyewa baru atau memperbarui data diri penyewa yang sudah ada (misalnya perubahan nomor telepon atau alamat).
@@ -26,15 +26,15 @@ Form dinamis yang muncul di dalam modal untuk mendaftarkan penyewa baru atau mem
   - **Email**: *(Email)* Alamat surat elektronik.
   - **Alamat Lengkap**: *(Text)* Alamat tempat tinggal saat ini.
 
-## 3. Form Kelola Pegawai (`employees.html`)
+## 3. Form Kelola Karyawan (`employees.html`)
 Form modal untuk administrasi SDM (Sumber Daya Manusia) di tingkat cabang. Digunakan untuk mendaftarkan Admin (kasir) baru maupun Driver (supir mutasi antar-cabang).
 - **Fungsi:** Mengelola pendaftaran dan data gaji para karyawan.
 - **Input Fields:**
-  - **Nama Lengkap**: *(Text)* Nama asli pegawai.
+  - **Nama Lengkap**: *(Text)* Nama asli Karyawan.
   - **Peran (Role)**: *(Dropdown/Select)* Pilihan antara `Admin` atau `Driver`.
-  - **Gaji**: *(Number)* Gaji pokok bulanan pegawai.
-  - **Telepon**: *(Text)* Nomor telepon pegawai.
-  - **Email**: *(Email)* Email operasional pegawai.
+  - **Gaji**: *(Number)* Gaji pokok bulanan Karyawan.
+  - **Telepon**: *(Text)* Nomor telepon Karyawan.
+  - **Email**: *(Email)* Email operasional Karyawan.
   - **Password**: *(Password)* Diisi untuk pengaturan awal atau pembaruan kata sandi (Hanya wajib bagi `Admin`).
 
 ## 4. Form Kelola Kendaraan (`vehicles.html`)
