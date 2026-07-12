@@ -59,26 +59,26 @@ Dokumen ini berisi daftar lengkap status pada *collections* utama, skenario peng
    - Rental Status (di A): `Pending Payment`
 2. **Konfirmasi Pembayaran**: Cabang A menerima uang, lalu mengeklik "Konfirmasi Payment".
    - Rental Status (di A): `Waiting Transfer`
-   - Transfer Status (di A & B): `Requested`
+   - Request Status (di A & B): `Requested`
 3. **Konfirmasi dari Cabang B**: Cabang B Approve request dari cabang A.
-   - Transfer Status (di A & B): `Approved`
+   - Request Status (di A & B): `Approved`
    - Vehicle Status (di B): `Transfer`
    - Rental Status (di A): `Waiting Transfer`
 4. **Mobil Tiba**: Cabang A mengeklik "Konfirmasi Tiba" (Sub Menu Request).
-   - Transfer Status: `Arrived`
+   - Request Status: `Arrived`
    - Rental Status (di A): `Waiting Handover` menunggu diserahkan ke customer
    - Vehicle Status (di B): `Reserved`
 5. **Mulai Penyewaan**: Pelanggan datang ke Cabang A, Mobil diserahkan dan Admin A mengeklik "Mulai Penyewaan" (Sub Menu Request).
-   - Transfer Status: `Started`
+   - Request Status: `Started`
    - Rental Status (di A): `Active`
    - Vehicle Status (di B): `Rented by Request`
 6. **Penyewaan Selesai (Oleh Pelanggan)**: Pelanggan mengembalikan kendaraan ke Cabang A, Admin A mengeklik "Selesaikan Penyewaan" (Sub Menu Request).
-   - Transfer Status: `Rent Finished`
+   - Request Status: `Rent Finished`
    - Rental Status (di A): `Completed`
 7. **Kembalikan Mobil (Oleh Cabang)**: Cabang A memulangkan mobil ke Cabang B, Admin A mengeklik "Kembalikan Kendaraan".
-   - Transfer Status: `Waiting Return`
+   - Request Status: `Waiting Return`
 8. **Mobil Sampai di Pemilik**: Cabang B mengeklik "Konfirmasi Pengembalian" (Sub Menu Request).
-   - Transfer Status: `Completed`
+   - Request Status: `Completed`
    - Vehicle Status (di B): `Available`
 
 ---

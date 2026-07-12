@@ -497,7 +497,7 @@
       const startDateFilter = document.getElementById('filterStartDate').value;
       const endDateFilter = document.getElementById('filterEndDate').value;
 
-      const ongoingData = currentData.filter(r => ['Active', 'Pending Payment', 'Waiting Transfer', 'Waiting Return'].includes(r.status));
+      const ongoingData = currentData.filter(r => ['Active', 'Pending Payment', 'Waiting Transfer', 'Waiting Handover', 'Waiting Return'].includes(r.status));
       const historyData = currentData.filter(r => ['Completed', 'Cancelled'].includes(r.status));
 
       // Filter Ongoing
@@ -541,6 +541,7 @@
         let statusClass = 'bg-primary';
         if (r.status === 'Completed') statusClass = 'bg-success';
         if (r.status === 'Waiting Transfer') statusClass = 'bg-warning';
+        if (r.status === 'Waiting Handover') statusClass = 'bg-warning';
         if (r.status === 'Pending Payment') statusClass = 'bg-warning';
         if (r.status === 'Waiting Return') statusClass = 'bg-warning';
         if (r.status === 'Cancelled') statusClass = 'bg-danger';
