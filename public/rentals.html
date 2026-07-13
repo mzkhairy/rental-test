@@ -750,10 +750,10 @@
           oSelect.innerHTML = '';
           pSelect.innerHTML = '';
           
-          Object.keys(ports).forEach(b => {
-             if (b !== currentUser.branchCode) {
-               oSelect.innerHTML += `<option value="${b}" ${rental.ownerBranch === b ? 'selected' : ''}>Cabang ${b}</option>`;
-               pSelect.innerHTML += `<option value="${b}" ${rental.pickupBranch === b ? 'selected' : ''}>Cabang ${b}</option>`;
+          allBranches.forEach(b => {
+             if (b.branchCode !== currentUser.branchCode) {
+               oSelect.innerHTML += `<option value="${b.branchCode}" ${rental.ownerBranch === b.branchCode ? 'selected' : ''}>Cabang ${b.branchCode}</option>`;
+               pSelect.innerHTML += `<option value="${b.branchCode}" ${rental.pickupBranch === b.branchCode ? 'selected' : ''}>Cabang ${b.branchCode}</option>`;
              }
           });
           pSelect.innerHTML += `<option value="${currentUser.branchCode}" ${rental.pickupBranch === currentUser.branchCode ? 'selected' : ''}>Cabang ${currentUser.branchCode} (Lokal)</option>`;
@@ -794,9 +794,9 @@
 
         let fetchedVehs = [];
         if (targetBranchCode) {
-          const port = ports[targetBranchCode];
-          if (port) {
-            const r = await fetch(`http://127.0.0.1:${port}/api/vehicles/available?startDate=${start.toISOString()}&endDate=${end.toISOString()}`);
+          const targetBranch = allBranches.find(b => b.branchCode === targetBranchCode);
+          if (targetBranch) {
+            const r = await fetch(`http://${targetBranch.host}:${targetBranch.apiPort}/api/vehicles/available?startDate=${start.toISOString()}&endDate=${end.toISOString()}`);
             const data = await r.json();
             if (data.vehicles) fetchedVehs = data.vehicles;
           }
